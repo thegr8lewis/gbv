@@ -52,7 +52,7 @@ export default function SGBVApp() {
   };
 
   return (
-    <div className="relative flex flex-col h-screen bg-gray-50 text-gray-800">
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       {/* Header */}
       <header className="relative py-5 px-4 text-white">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0E3692] to-transparent opacity-90"></div>
@@ -69,12 +69,12 @@ export default function SGBVApp() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4">
+      <main className="flex-1 overflow-y-auto p-4 pb-16">
         {renderContent()}
       </main>
 
-      {/* Footer Navigation - Always visible */}
-      <footer className="bg-white border-t border-gray-200 shadow-inner">
+      {/* Fixed Footer Navigation */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-inner z-10">
         <div className="flex justify-around py-3">
           <button 
             onClick={() => setActiveTab('home')}
@@ -194,21 +194,21 @@ function ReportForm({ step, setStep, formData, handleInputChange }) {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Incident Details</h3>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category of Incident*
-                </label>
-                <select 
-                  className="w-full max-w-xs p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E3692] focus:border-[#0E3692] focus:outline-none"
-                  value={formData.category}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat, index) => (
-                    <option key={index} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category of Incident*
+              </label>
+              <select 
+                className="w-full max-w-xs p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E3692] focus:border-[#0E3692] focus:outline-none"
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+                required
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat, index) => (
+                  <option key={index} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
