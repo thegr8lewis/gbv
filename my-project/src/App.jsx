@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import kenyanFlag from './assets/kenyanflag.png';
 import { 
@@ -26,6 +26,8 @@ export default function SGBVApp() {
     location: '',
     anonymous: false,
   });
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   const handleInputChange = (field, value) => {
     setFormData({
@@ -51,10 +53,31 @@ export default function SGBVApp() {
     }
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+        // Scrolling down
+        setHeaderVisible(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling up
+        setHeaderVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
-      {/* Header */}
-      <header className="relative py-5 px-4 text-white">
+      {/* Header - Animated based on scroll */}
+      <header className={`fixed top-0 left-0 right-0 py-5 px-4 text-white transition-transform duration-300 z-20 ${
+        headerVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#0E3692] to-transparent opacity-90"></div>
         <div className="relative z-10 flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -69,7 +92,7 @@ export default function SGBVApp() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 pb-16">
+      <main className="flex-1 overflow-y-auto pt-20 pb-16 px-4"> {/* Added pt-20 to account for header height */}
         {renderContent()}
       </main>
 
