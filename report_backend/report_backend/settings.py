@@ -5,6 +5,9 @@ import environ
 
 env = environ.Env()
 environ.Env.read_env()
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -32,11 +35,23 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework.authtoken',
     'corsheaders',
     'rest_framework',
     'reports',
 ]
 
+# settings.py
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}
 
 CORS_ORIGIN_ALLOW_ALL = True  # For development only
 # settings.py
@@ -82,11 +97,11 @@ WSGI_APPLICATION = 'report_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'report_db2',
-        'USER': 'mike',
-        'PASSWORD': 'pass123',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
@@ -96,6 +111,7 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+AUTH_USER_MODEL = 'auth.User'  # Default user model
 
 AUTH_PASSWORD_VALIDATORS = [
     {
