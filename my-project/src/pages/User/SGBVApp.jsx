@@ -1,4 +1,3 @@
-// SGBVApp.jsx
 import { useState, useEffect, useRef } from 'react';
 import kenyanFlag from "/src/assets/kenyanflag.png";
 import { Home, Phone, Info, Bell, Send, Shield, Upload, AlertTriangle } from 'lucide-react';
@@ -7,6 +6,7 @@ import ReportForm from './Report.jsx';
 import EmergencyContacts from './Emergency.jsx';
 import InformationScreen from './About.jsx';
 import UpdatesScreen from './Updates.jsx';
+import { submitReport } from './sgbvApi';
 
 export default function SGBVApp() {
   const [activeTab, setActiveTab] = useState('home');
@@ -21,8 +21,11 @@ export default function SGBVApp() {
     contactEmail: '',
     location: '',
     anonymous: false,
+    evidence: null,
   });
   const [headerVisible, setHeaderVisible] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const lastScrollY = useRef(0);
 
   const handleInputChange = (field, value) => {
@@ -32,12 +35,54 @@ export default function SGBVApp() {
     });
   };
 
+  const handleSubmitReport = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      // Prepare the data to send to the backend
+      const reportData = {
+        category: formData.category,
+        description: formData.description,
+        gender: formData.gender,
+        location: formData.location,
+        perpetrator_details: formData.perpetratorDetails,
+        contact_info: {
+          phone: formData.contactPhone,
+          email: formData.contactEmail
+        },
+        is_anonymous: formData.anonymous,
+        // You would need to handle file uploads separately
+        // evidence: formData.evidence 
+      };
+
+      const response = await submitReport(reportData);
+      
+      // If successful, move to the success step
+      setStep(3);
+    } catch (error) {
+      setSubmitError(error.message || 'Failed to submit report. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
         return <HomeScreen setActiveTab={setActiveTab} />;
       case 'report':
-        return <ReportForm step={step} setStep={setStep} formData={formData} handleInputChange={handleInputChange} />;
+        return (
+          <ReportForm 
+            step={step} 
+            setStep={setStep} 
+            formData={formData} 
+            handleInputChange={handleInputChange}
+            handleSubmitReport={handleSubmitReport}
+            isSubmitting={isSubmitting}
+            submitError={submitError}
+          />
+        );
       case 'emergency':
         return <EmergencyContacts />;
       case 'info':

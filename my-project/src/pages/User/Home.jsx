@@ -1,7 +1,7 @@
-// Home.jsx
+// src/Home.jsx
 import { AlertTriangle, Phone } from 'lucide-react';
 
-export default function HomeScreen({ setActiveTab }) {
+export default function HomeScreen({ setActiveTab, isLoggedIn }) {
   return (
     <div className="space-y-6">
       <div className="bg-[#0E3692] rounded-2xl p-6 text-white shadow-lg">
@@ -11,7 +11,7 @@ export default function HomeScreen({ setActiveTab }) {
           onClick={() => setActiveTab('report')}
           className="bg-white text-[#0E3692] px-6 py-2 rounded-lg font-medium shadow-md hover:bg-gray-100 transition-colors"
         >
-          Report an Incident
+          {isLoggedIn ? 'Report an Incident' : 'Learn How to Report'}
         </button>
       </div>
 
@@ -53,6 +53,12 @@ export default function HomeScreen({ setActiveTab }) {
             <p className="text-xs text-gray-500">1 week ago</p>
           </div>
         </div>
+        <button 
+          onClick={() => setActiveTab('updates')}
+          className="mt-3 text-sm text-[#0E3692] hover:text-blue-900"
+        >
+          View all updates
+        </button>
       </div>
     </div>
   );

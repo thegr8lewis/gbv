@@ -68,10 +68,10 @@ export default function EmergencyContacts() {
           For non-emergency inquiries or follow-ups, you can email:
         </p>
         <a 
-          href="mailto:director-gender@ku.ac.ke"
+          href="mailto:director-gender@kenya.ac.ke"
           className="block bg-white text-blue-700 px-4 py-3 rounded-lg text-center shadow-sm hover:bg-blue-50 transition-colors"
         >
-          director-gender@ku.ac.ke
+          director-gender@kenya.ac.ke
         </a>
       </div>
     </div>

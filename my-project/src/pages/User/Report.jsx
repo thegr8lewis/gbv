@@ -1,7 +1,30 @@
-// Report.jsx
 import { Shield, Upload } from 'lucide-react';
+import { useState } from 'react';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
-export default function ReportForm({ step, setStep, formData, handleInputChange }) {
+const MySwal = withReactContent(Swal);
+
+
+export default function ReportForm() {
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const initialFormData = {
+    category: '',
+    description: '',
+    gender: '',
+    location: '',
+    perpetratorDetails: '',
+    anonymous: false,
+    contactPhone: '',
+    contactEmail: '',
+    evidence: null
+  };
+  
+  const [formData, setFormData] = useState(initialFormData);
+  
+
   const categories = [
     "Sexual Harassment",
     "Sexual Assault",
@@ -12,6 +35,102 @@ export default function ReportForm({ step, setStep, formData, handleInputChange 
     "Other"
   ];
 
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        setSubmitError('File size must be less than 10MB');
+        return;
+      }
+      
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      if (!validTypes.includes(file.type)) {
+        setSubmitError('Only JPG, PNG, or PDF files are allowed');
+        return;
+      }
+      
+      handleInputChange('evidence', file);
+      setSubmitError(null);
+    }
+  };
+
+  const handleSubmitReport = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      const formDataToSend = new FormData();
+      
+      // Append all form data to FormData object
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          // Map frontend keys to backend keys
+          let backendKey = key;
+          if (key === 'perpetratorDetails') backendKey = 'perpetrator_details';
+          if (key === 'anonymous') backendKey = 'is_anonymous';
+          if (key === 'contactPhone') backendKey = 'contact_phone';
+          if (key === 'contactEmail') backendKey = 'contact_email';
+          
+          formDataToSend.append(backendKey, value);
+        }
+      });
+      
+
+      const response = await fetch('http://localhost:8000/api/reports/', {
+        method: 'POST',
+        body: formDataToSend,
+        // Don't set Content-Type header - let the browser set it with boundary
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit report');
+      }
+
+      setStep(3); // Move to success step
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitError(error.message || 'An error occurred while submitting the report');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleContinue = () => {
+    // Step 1 just goes to Step 2
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+  
+    // Step 2: validate before submitting
+    if (step === 2) {
+      // Simple validation
+      if (!formData.category || !formData.description || (!formData.anonymous && (!formData.contactPhone && !formData.contactEmail))) {
+        setSubmitError('Please fill in all required fields or choose to remain anonymous.');
+        MySwal.fire({
+          title: 'Submission Failed',
+          text: 'Please fill in all required details before submitting.',
+          icon: 'error',
+          confirmButtonText: 'Try Again'
+        });
+        return;
+      }
+      
+  
+      handleSubmitReport();
+    }
+  };
+  
   const renderStepContent = () => {
     switch (step) {
       case 1:
@@ -177,15 +296,24 @@ export default function ReportForm({ step, setStep, formData, handleInputChange 
               )}
             </div>
             
-            <div>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative cursor-pointer">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Upload Evidence (Optional)
               </label>
+              <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.pdf"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <Upload className="mx-auto text-gray-400 mb-2" size={24} />
                 <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
                 <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF up to 10MB</p>
-              </div>
+              </div>{formData.evidence && (
+                <p className="text-sm mt-2 text-gray-600">Selected file: {formData.evidence.name}</p>
+              )}
+
             </div>
             
             <div className="flex justify-between">
@@ -196,11 +324,13 @@ export default function ReportForm({ step, setStep, formData, handleInputChange 
                 Back
               </button>
               <button
-                onClick={() => setStep(3)}
-                className="bg-[#0E3692] text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-900 transition-colors"
-              >
-                Continue
-              </button>
+                  onClick={handleContinue}
+                  disabled={isSubmitting}
+                  className="bg-[#0E3692] text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-900 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+
             </div>
           </div>
         );
@@ -237,12 +367,17 @@ export default function ReportForm({ step, setStep, formData, handleInputChange 
             </div>
             
             <div className="flex justify-between">
-              <button
-                onClick={() => setStep(1)}
+            <button
+                onClick={() => {
+                  setFormData(initialFormData);
+                  setStep(1);
+                  setSubmitError(null);
+                }}
                 className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
               >
                 Report Another Incident
               </button>
+
             </div>
           </div>
         );
@@ -257,20 +392,30 @@ export default function ReportForm({ step, setStep, formData, handleInputChange 
         <div className="mb-6">
           <h2 className="text-xl font-bold mb-4">Report an Incident</h2>
           <div className="flex items-center mb-4">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-[#0E3692] text-white' : 'bg-gray-200'}`}>
-              1
-            </div>
-            <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-[#0E3692]' : 'bg-gray-200'}`}></div>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-[#0E3692] text-white' : 'bg-gray-200'}`}>
-              2
-            </div>
-            <div className={`flex-1 h-1 mx-2 ${step >= 3 ? 'bg-[#0E3692]' : 'bg-gray-200'}`}></div>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-[#0E3692] text-white' : 'bg-gray-200'}`}>
-              3
-            </div>
+            {/* Progress steps indicator */}
+            {[1, 2].map((stepNumber) => (
+              <div key={stepNumber} className="flex items-center">
+                <div 
+                  className={`w-8 h-8 rounded-full flex items-center justify-center 
+                    ${step >= stepNumber ? 'bg-[#0E3692] text-white' : 'bg-gray-200 text-gray-600'}`}
+                >
+                  {stepNumber}
+                </div>
+                {stepNumber < 2 && (
+                  <div className={`w-16 h-1 mx-2 ${step > stepNumber ? 'bg-[#0E3692]' : 'bg-gray-200'}`}></div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
+      
+      {submitError && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+          {submitError}
+        </div>
+      )}
+      
       {renderStepContent()}
     </div>
   );
