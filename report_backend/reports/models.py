@@ -32,6 +32,11 @@ class IncidentReport(models.Model):
         null=True,
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'pdf'])]
     )
+    status = models.CharField(max_length=100, default='New', choices=[
+        ('New', 'New'),
+        ('Pending', 'Pending'),
+        ('Completed', 'Completed'),
+    ])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

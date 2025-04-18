@@ -20,8 +20,8 @@ export default function AdminLayout({ children, activeNavItem }) {
   const navItems = [
     { name: 'Dashboard', icon: <BarChart2 className="w-5 h-5" /> },
     { name: 'Reports', icon: <FileText className="w-5 h-5" /> },
-    { name: 'Support Messages', icon: <MessageSquare className="w-5 h-5" /> },
-    { name: 'Events & Workshops', icon: <Calendar className="w-5 h-5" /> },
+    { name: 'Support', icon: <MessageSquare className="w-5 h-5" /> },
+    { name: 'Events', icon: <Calendar className="w-5 h-5" /> },
     { name: 'Settings', icon: <Settings className="w-5 h-5" /> }
   ];
 
@@ -69,18 +69,11 @@ export default function AdminLayout({ children, activeNavItem }) {
             <button onClick={() => setSidebarOpen(true)} className="p-2 text-gray-500 lg:hidden">
               <Menu className="w-6 h-6" />
             </button>
-            <h1 className="ml-4 text-xl font-semibold text-gray-800">Admin Dashboard</h1>
+            
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="py-2 pl-10 pr-4 text-sm bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-            </div>
+            
             <button className="p-2 text-gray-500 bg-gray-100 rounded-full">
               <Bell className="w-5 h-5" />
             </button>
