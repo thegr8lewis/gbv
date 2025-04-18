@@ -215,7 +215,7 @@ export default function Dashboard() {
           <div className="overflow-x-auto">
             {loading ? (
               <div className="p-8 text-center text-gray-500">
-                Loading reports...
+                Loading reports....
               </div>
             ) : recentReports.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
