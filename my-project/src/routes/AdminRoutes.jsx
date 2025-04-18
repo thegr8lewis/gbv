@@ -4,13 +4,15 @@ import Dashboard from "../pages/Admin/Dashboard";
 import Events from "../pages/Admin/EventsandWorkshops";
 import Settings from "../pages/Admin/Settings";
 import Support from "../pages/Admin/Support";
-import Reports from "../pages/Admin/Reports"; 
+import Reports from "../pages/Admin/Reports";
+import Login from "../pages/Admin/Login";
 
 const AdminRoutes = () => {
   return (
       <Routes>
 
-        <Route path="/" element={<Adminlayout/>}/>
+        <Route path="/" element={<Login/>}/>
+        <Route path="adminlayout" element={<Adminlayout/>}/>
         <Route path="Dashboard" element={<Dashboard/>}/>
         <Route path="Events" element={<Events/>}/>
         <Route path="Settings" element={<Settings/>}/>

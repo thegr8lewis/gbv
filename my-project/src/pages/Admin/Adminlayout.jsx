@@ -1,5 +1,6 @@
 // components/AdminLayout.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import kenyanFlag from "/src/assets/kenyanflag.png";
 import { 
   Menu, 
   X, 
@@ -13,9 +14,52 @@ import {
   Bell,
   Clock
 } from 'lucide-react';
+import axios from 'axios';
 
 export default function AdminLayout({ children, activeNavItem }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adminName, setAdminName] = useState('Admin');
+  const [newReportsCount, setNewReportsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch admin details
+    const fetchAdminDetails = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/admin/details/', {
+          headers: {
+            'Authorization': `Token ${localStorage.getItem('auth_token')}`
+          }
+        });
+        setAdminName(response.data.name);
+      } catch (error) {
+        console.error('Error fetching admin details:', error);
+      }
+    };
+
+    // Fetch new reports count
+    const fetchNewReportsCount = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/reports/count/?status=New', {
+          headers: {
+            'Authorization': `Token ${localStorage.getItem('auth_token')}`
+          }
+        });
+        setNewReportsCount(response.data.count);
+      } catch (error) {
+        console.error('Error fetching reports count:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminDetails();
+    fetchNewReportsCount();
+
+    // Set up polling for new reports (every 5 minutes)
+    const interval = setInterval(fetchNewReportsCount, 300000);
+    return () => clearInterval(interval);
+  }, []);
 
   const navItems = [
     { name: 'Dashboard', icon: <BarChart2 className="w-5 h-5" /> },
@@ -25,17 +69,29 @@ export default function AdminLayout({ children, activeNavItem }) {
     { name: 'Settings', icon: <Settings className="w-5 h-5" /> }
   ];
 
+  // Get initials from admin name
+  const getInitials = (name) => {
+    if (!name) return 'AD';
+    const names = name.split(' ');
+    return names.map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:block`}>
         <div className="flex items-center h-16 px-6 border-b">
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-md">
-              <span className="text-white font-bold">KU</span>
-            </div>
-            <span className="text-lg font-semibold text-gray-900">KU CGEE</span>
-          </div>
+        <div className="flex items-center space-x-3">
+  <img 
+    src={kenyanFlag} 
+    alt="Kenyan Flag" 
+    className="h-12 w-auto"
+  />
+  <div className="flex flex-col">
+    <h1 className="text-2xl font-bold">ADMIN</h1>
+    <p className="text-sm font-semibold text-gray-600">SafeSpace</p>
+  </div>
+</div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden ml-auto">
             <X className="w-6 h-6 text-gray-500" />
           </button>
@@ -69,19 +125,28 @@ export default function AdminLayout({ children, activeNavItem }) {
             <button onClick={() => setSidebarOpen(true)} className="p-2 text-gray-500 lg:hidden">
               <Menu className="w-6 h-6" />
             </button>
-            
           </div>
           
           <div className="flex items-center space-x-4">
-            
-            <button className="p-2 text-gray-500 bg-gray-100 rounded-full">
-              <Bell className="w-5 h-5" />
-            </button>
+            <div className="relative">
+              <button className="p-2 text-gray-500 bg-gray-100 rounded-full relative">
+                <Bell className="w-5 h-5" />
+                {newReportsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {newReportsCount}
+                  </span>
+                )}
+              </button>
+            </div>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">AD</span>
+                <span className="text-white font-medium text-sm">
+                  {getInitials(adminName)}
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-700">Admin</span>
+              <span className="text-sm font-medium text-gray-700">
+                {adminName}
+              </span>
             </div>
           </div>
         </header>
