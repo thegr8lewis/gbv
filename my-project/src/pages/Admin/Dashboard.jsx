@@ -12,7 +12,7 @@ import {
   Download,
   RefreshCw
 } from 'lucide-react';
-import AdminLayout from '/src/pages/Admin/AdminLayout';
+import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function Dashboard() {
   const [reports, setReports] = useState([]);

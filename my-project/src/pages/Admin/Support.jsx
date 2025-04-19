@@ -1,7 +1,7 @@
 // pages/admin/support-messages.jsx
 import { useState } from 'react';
 import { MessageSquare } from 'lucide-react';
-import AdminLayout from '/src/pages/Admin/AdminLayout';;
+import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';;
 
 export default function SupportMessages() {
   const [messages, setMessages] = useState([

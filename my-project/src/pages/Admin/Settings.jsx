@@ -1,7 +1,7 @@
 // pages/admin/settings.jsx
 import { useState } from 'react';
 import { Settings } from 'lucide-react';
-import AdminLayout from '/src/pages/Admin/AdminLayout';
+import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function SettingsPage() {
   const [formData, setFormData] = useState({
