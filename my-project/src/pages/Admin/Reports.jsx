@@ -13,7 +13,7 @@ import {
   List,
   ChevronDown
 } from 'lucide-react';
-import AdminLayout from '/src/pages/Admin/AdminLayout';
+import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
