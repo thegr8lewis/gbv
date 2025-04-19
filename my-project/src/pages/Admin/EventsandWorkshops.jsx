@@ -1,7 +1,7 @@
 // pages/admin/events-workshops.jsx
 import { useState } from 'react';
 import { Calendar, Plus } from 'lucide-react';
-import AdminLayout from '/src/pages/Admin/AdminLayout';
+import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function EventsWorkshops() {
   const [events, setEvents] = useState([
