@@ -3,7 +3,7 @@ import { AlertTriangle, Phone, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function HomeScreen({ setActiveTab, isLoggedIn }) {
+export default function HomeScreen({ isLoggedIn }) {
   const [latestUpdates, setLatestUpdates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,18 +35,17 @@ export default function HomeScreen({ setActiveTab, isLoggedIn }) {
   };
 
   const handleViewUpdate = (updateId) => {
-    // Navigate to updates tab with the specific update ID
-    setActiveTab('updates');
+    // Navigate to updates page
     navigate('/updates');
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-[#0E3692] rounded-2xl p-6 text-white shadow-lg">
+    <div className="space-y-5">
+      <div className="bg-[#0E3692] rounded-2xl p-5 text-white shadow-lg">
         <h2 className="text-2xl font-bold mb-2">Welcome to SafeSpace</h2>
         <p className="mb-4">A secure platform to report and address sexual and gender-based violence.</p>
         <button 
-          onClick={() => setActiveTab('report')}
+          onClick={() => navigate('/report')}
           className="bg-white text-[#0E3692] px-6 py-2 rounded-lg font-medium shadow-md hover:bg-gray-100 transition-colors"
         >
           {isLoggedIn ? 'Report an Incident' : 'Learn How to Report'}
@@ -60,7 +59,7 @@ export default function HomeScreen({ setActiveTab, isLoggedIn }) {
         </h3>
         <p className="text-gray-600 mb-3">Need immediate help? Access emergency contacts directly.</p>
         <button 
-          onClick={() => setActiveTab('emergency')}
+          onClick={() => navigate('/emergency')}
           className="text-red-500 border border-red-500 px-4 py-2 rounded-lg font-medium hover:bg-red-50 transition-colors flex items-center"
         >
           <Phone size={16} className="mr-2" />
@@ -72,7 +71,7 @@ export default function HomeScreen({ setActiveTab, isLoggedIn }) {
         <h3 className="text-lg font-semibold mb-3">Resources & Information</h3>
         <p className="text-gray-600 mb-3">Learn about gender equity, support services, and how to identify SGBV.</p>
         <button 
-          onClick={() => setActiveTab('info')}
+          onClick={() => navigate('/about')}
           className="text-[#0E3692] border border-[#0E3692] px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
         >
           Learn More
@@ -103,7 +102,7 @@ export default function HomeScreen({ setActiveTab, isLoggedIn }) {
                     <p className="text-xs text-gray-500">{formatDate(update.created_at)}</p>
                   </div>
                   <button
-                    onClick={() => setActiveTab('updates')}
+                    onClick={() => navigate('/updates')}
                     className="text-[#0E3692] text-xs flex items-center hover:underline"
                   >
                     View <ArrowRight size={14} className="ml-1" />
@@ -117,7 +116,7 @@ export default function HomeScreen({ setActiveTab, isLoggedIn }) {
         )}
 
         <button 
-          onClick={() => setActiveTab('updates')}
+          onClick={() => navigate('/updates')}
           className="mt-3 text-sm text-[#0E3692] hover:text-blue-900 hover:underline"
         >
           View all updates

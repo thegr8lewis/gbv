@@ -1,80 +1,11 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { Home, Send, AlertTriangle, Info, Bell } from 'lucide-react';
 import kenyanFlag from "/src/assets/kenyanflag.png";
-import { Home, Phone, Info, Bell, Send, Shield, Upload, AlertTriangle } from 'lucide-react';
-import HomeScreen from './Home.jsx';
-import ReportForm from './Report.jsx';
-import EmergencyContacts from './Emergency.jsx';
-import InformationScreen from './About.jsx';
-import UpdatesScreen from './Updates.jsx';
-import { submitReport } from './sgbvApi';
+import { useState, useEffect, useRef } from 'react';
 
-function SGBVApp() {
-  const location = useLocation();
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    category: '',
-    subcategory: '',
-    description: '',
-    gender: '',
-    perpetratorDetails: '',
-    contactPhone: '',
-    contactEmail: '',
-    location: '',
-    anonymous: false,
-    evidence: null,
-  });
+export default function Layout({ children, activeTab }) {
   const [headerVisible, setHeaderVisible] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
   const lastScrollY = useRef(0);
-
-  // Get active tab based on current route
-  const getActiveTab = () => {
-    switch(location.pathname) {
-      case '/report': return 'report';
-      case '/emergency': return 'emergency';
-      case '/about': return 'about';
-      case '/updates': return 'updates';
-      default: return 'home';
-    }
-  };
-
-  const activeTab = getActiveTab();
-
-  const handleInputChange = (field, value) => {
-    setFormData({
-      ...formData,
-      [field]: value
-    });
-  };
-
-  const handleSubmitReport = async () => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-    
-    try {
-      const reportData = {
-        category: formData.category,
-        description: formData.description,
-        gender: formData.gender,
-        location: formData.location,
-        perpetrator_details: formData.perpetratorDetails,
-        contact_info: {
-          phone: formData.contactPhone,
-          email: formData.contactEmail
-        },
-        is_anonymous: formData.anonymous,
-      };
-
-      const response = await submitReport(reportData);
-      setStep(3);
-    } catch (error) {
-      setSubmitError(error.message || 'Failed to submit report. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -113,27 +44,8 @@ function SGBVApp() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pt-20 pb-16 px-4">
-        <Routes>
-          <Route path="/" element={<HomeScreen />} />
-          <Route 
-            path="/report" 
-            element={
-              <ReportForm 
-                step={step} 
-                setStep={setStep} 
-                formData={formData} 
-                handleInputChange={handleInputChange}
-                handleSubmitReport={handleSubmitReport}
-                isSubmitting={isSubmitting}
-                submitError={submitError}
-              />
-            } 
-          />
-          <Route path="/emergency" element={<EmergencyContacts />} />
-          <Route path="/about" element={<InformationScreen />} />
-          <Route path="/updates" element={<UpdatesScreen />} />
-        </Routes>
+      <main className="flex-1 overflow-y-auto pt-16 pb-16 px-4">
+        {children}
       </main>
 
       {/* Fixed Footer Navigation */}
@@ -168,7 +80,7 @@ function SGBVApp() {
             <span className="text-xs mt-1">About</span>
           </Link>
           <Link 
-            to="/update"
+            to="/updates"
             className={`flex flex-col items-center p-2 ${activeTab === 'updates' ? 'text-[#0E3692]' : 'text-gray-600'}`}
           >
             <Bell size={20} />
@@ -179,5 +91,3 @@ function SGBVApp() {
     </div>
   );
 }
-
-export default SGBVApp;
