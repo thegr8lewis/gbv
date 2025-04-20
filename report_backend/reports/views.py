@@ -1,25 +1,3 @@
-# from rest_framework import status
-# from rest_framework.response import Response
-# from rest_framework.views import APIView
-# from rest_framework.generics import ListAPIView
-# from .models import IncidentReport
-# from .serializers import IncidentReportSerializer
-
-# # Existing view for submitting reports
-# class SubmitReportView(APIView):
-#     def post(self, request, format=None):
-#         serializer = IncidentReportSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# # New view for fetching reports
-# class ListReportsView(ListAPIView):
-#     queryset = IncidentReport.objects.all()
-#     serializer_class = IncidentReportSerializer
-
-# reports/views.py
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -34,6 +12,68 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import IncidentReport
+from rest_framework import generics, status
+from .models import SupportMessage, Update
+from django.utils import timezone
+from .serializers import SupportMessageSerializer, UpdateSerializer
+from .models import SupportMessage, Update, Event
+from .serializers import SupportMessageSerializer, UpdateSerializer, EventSerializer
+
+
+
+class EventListView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EventSerializer
+    
+    def get_queryset(self):
+        return Event.objects.all().order_by('-date')
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EventSerializer
+    queryset = Event.objects.all()
+    lookup_field = 'id'
+
+class PublicEventListView(generics.ListAPIView):
+    serializer_class = EventSerializer
+    queryset = Event.objects.filter(date__gte=timezone.now()).order_by('date')
+
+
+class PublicUpdateListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = UpdateSerializer
+    queryset = Update.objects.filter(published=True).order_by('-date')
+
+class SupportMessageListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupportMessageSerializer
+    queryset = SupportMessage.objects.all().order_by('-created_at')
+
+class SupportMessageDetailView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupportMessageSerializer
+    queryset = SupportMessage.objects.all()
+    lookup_field = 'id'
+
+class UpdateListView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UpdateSerializer
+    
+    def get_queryset(self):
+        return Update.objects.all().order_by('-date')
+    
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+class UpdateDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UpdateSerializer
+    queryset = Update.objects.all()
+    lookup_field = 'id'
+
 
 class ReportsCountView(APIView):
     permission_classes = [IsAuthenticated]

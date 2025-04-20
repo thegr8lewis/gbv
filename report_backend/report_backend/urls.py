@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from reports.views import SubmitReportView, ListReportsView, UpdateReportStatusView,LoginView, AdminDetailsView, ReportsCountView
+from reports.views import SubmitReportView, ListReportsView, UpdateReportStatusView,LoginView, AdminDetailsView, ReportsCountView, SupportMessageListView, SupportMessageDetailView, UpdateListView, UpdateDetailView, PublicUpdateListView, EventListView, EventDetailView, PublicEventListView
 
 
 urlpatterns = [
@@ -14,6 +14,14 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/admin/details/', AdminDetailsView.as_view(), name='admin-details'),
     path('api/reports/count/', ReportsCountView.as_view(), name='reports-count'),
+    path('api/support-messages/', SupportMessageListView.as_view(), name='support-messages-list'),
+    path('api/support-messages/<int:id>/', SupportMessageDetailView.as_view(), name='support-message-detail'),
+    path('api/updates/', UpdateListView.as_view(), name='updates-list'),
+    path('api/updates/<int:id>/', UpdateDetailView.as_view(), name='update-detail'),
+    path('api/public/updates/', PublicUpdateListView.as_view(), name='public-updates-list'),
+    path('api/events/', EventListView.as_view(), name='events-list'),
+    path('api/events/<int:id>/', EventDetailView.as_view(), name='event-detail'),
+    path('api/public/events/', PublicEventListView.as_view(), name='public-events-list'),
 ]
 
 if settings.DEBUG:
