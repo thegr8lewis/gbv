@@ -1,7 +1,45 @@
 // src/Home.jsx
-import { AlertTriangle, Phone } from 'lucide-react';
+import { AlertTriangle, Phone, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function HomeScreen({ setActiveTab, isLoggedIn }) {
+  const [latestUpdates, setLatestUpdates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchLatestUpdates = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/public/updates/?ordering=-created_at');
+        if (!response.ok) {
+          throw new Error('Failed to fetch updates');
+        }
+        const data = await response.json();
+        // Get the first 3 most recent updates
+        setLatestUpdates(data.slice(0, 3));
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLatestUpdates();
+  }, []);
+
+  const formatDate = (dateString) => {
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+
+  const handleViewUpdate = (updateId) => {
+    // Navigate to updates tab with the specific update ID
+    setActiveTab('updates');
+    navigate('/updates');
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-[#0E3692] rounded-2xl p-6 text-white shadow-lg">
@@ -43,19 +81,44 @@ export default function HomeScreen({ setActiveTab, isLoggedIn }) {
 
       <div className="bg-gray-100 rounded-xl p-5">
         <h3 className="text-lg font-semibold mb-2">Latest Updates</h3>
-        <div className="space-y-3">
-          <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm font-medium">New reporting features available</p>
-            <p className="text-xs text-gray-500">2 days ago</p>
+        
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white p-3 rounded-lg shadow-sm animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
           </div>
-          <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm font-medium">Awareness workshop scheduled</p>
-            <p className="text-xs text-gray-500">1 week ago</p>
+        ) : error ? (
+          <div className="text-red-500 text-sm">{error}</div>
+        ) : latestUpdates.length > 0 ? (
+          <div className="space-y-3">
+            {latestUpdates.map((update) => (
+              <div key={update.id} className="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium">{update.title}</p>
+                    <p className="text-xs text-gray-500">{formatDate(update.created_at)}</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('updates')}
+                    className="text-[#0E3692] text-xs flex items-center hover:underline"
+                  >
+                    View <ArrowRight size={14} className="ml-1" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <p className="text-gray-500 text-sm">No updates available</p>
+        )}
+
         <button 
           onClick={() => setActiveTab('updates')}
-          className="mt-3 text-sm text-[#0E3692] hover:text-blue-900"
+          className="mt-3 text-sm text-[#0E3692] hover:text-blue-900 hover:underline"
         >
           View all updates
         </button>
