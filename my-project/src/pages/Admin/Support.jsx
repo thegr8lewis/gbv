@@ -417,7 +417,7 @@ export default function SupportMessages() {
 
         {/* Rest of the UI remains the same as before, except for delete buttons which now use confirmDelete */}
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          
           
           <div className="flex space-x-2">
             <button 
