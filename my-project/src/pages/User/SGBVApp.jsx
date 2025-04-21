@@ -113,7 +113,7 @@ function SGBVApp() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pt-20 pb-16 px-4">
+      <main className="flex-1 overflow-y-auto pt-14 pb-16 px-1">
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route 
@@ -168,7 +168,7 @@ function SGBVApp() {
             <span className="text-xs mt-1">About</span>
           </Link>
           <Link 
-            to="/update"
+            to="/updates"
             className={`flex flex-col items-center p-2 ${activeTab === 'updates' ? 'text-[#0E3692]' : 'text-gray-600'}`}
           >
             <Bell size={20} />
