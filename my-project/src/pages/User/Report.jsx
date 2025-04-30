@@ -2,6 +2,7 @@ import { Shield, Upload } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import ReportResponse from '/src/pages/user/ReportResponse';
 
 const MySwal = withReactContent(Swal);
 
@@ -9,6 +10,8 @@ export default function ReportForm() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [submittedReport, setSubmittedReport] = useState(null);
+  
   const initialFormData = {
     category: '',
     description: '',
@@ -85,7 +88,6 @@ export default function ReportForm() {
       const response = await fetch('http://localhost:8000/api/reports/', {
         method: 'POST',
         body: formDataToSend,
-        // Don't set Content-Type header - let the browser set it with boundary
       });
 
       if (!response.ok) {
@@ -93,6 +95,8 @@ export default function ReportForm() {
         throw new Error(errorData.message || 'Failed to submit report');
       }
 
+      const responseData = await response.json();
+      setSubmittedReport(responseData);
       setStep(3); // Move to success step
     } catch (error) {
       console.error('Submission error:', error);
@@ -125,6 +129,13 @@ export default function ReportForm() {
       
       handleSubmitReport();
     }
+  };
+  
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setStep(1);
+    setSubmittedReport(null);
+    setSubmitError(null);
   };
   
   const renderStepContent = () => {
@@ -356,55 +367,15 @@ export default function ReportForm() {
               <p className="text-green-700 mb-4 text-lg">
                 Thank you for your report. It has been submitted securely.
               </p>
-              <div className="bg-white bg-opacity-70 rounded-lg p-4 max-w-md mx-auto">
-                {!formData.anonymous ? (
-                  <p className="text-gray-700">
-                    A representative will contact you soon via the contact information provided.
-                  </p>
-                ) : (
-                  <p className="text-gray-700">
-                    You've submitted this report anonymously. The appropriate team will review and take action.
-                  </p>
-                )}
-              </div>
             </div>
             
-            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-5 shadow-sm">
-              <h4 className="font-semibold text-blue-800 mb-3 text-lg flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                Next Steps
-              </h4>
-              <ul className="text-blue-900 space-y-2 pl-5">
-                <li className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Your report will be reviewed by trained professionals
-                </li>
-                <li className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  All information is kept strictly confidential
-                </li>
-                <li className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Support resources are available through the "Resources" section
-                </li>
-              </ul>
-            </div>
+        
             
+            {submittedReport && <ReportResponse reportData={submittedReport} />}
+          
             <div className="flex justify-center pt-4">
               <button
-                onClick={() => {
-                  setFormData(initialFormData);
-                  setStep(1);
-                  setSubmitError(null);
-                }}
+                onClick={resetForm}
                 className="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
