@@ -6,6 +6,7 @@ import Report from "../pages/User/Report";
 import Update from "../pages/User/Updates";
 import GBVApp from "../pages/User/SGBVApp";
 import Layout from '../pages/User/Layout';
+import Response from "../pages/User/ReportResponse";
 
 const UserRoutes = () => {
   return (
@@ -18,6 +19,7 @@ const UserRoutes = () => {
         <Route path="/emergency" element={<Emergency />} />
         <Route path="/about" element={<About />} />
         <Route path="/updates" element={<Update />} />
+        <Route path="/report-response" element={<Response />} />
       </Routes>
     </Layout>
 
