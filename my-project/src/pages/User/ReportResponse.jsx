@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -6,45 +6,141 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
 import { Map, Loader, AlertTriangle, Navigation, LocateFixed, Shield, Hospital, Phone, ArrowRight } from 'lucide-react';
 
-// Cache for storing location data
+// Cache for storing location data with a longer validity
 const locationCache = {
   coords: null,
   timestamp: null,
-  services: null
+  services: null,
+  // Cache expiry in milliseconds (5 minutes)
+  CACHE_EXPIRY: 5 * 60 * 1000
 };
 
-// Routing Control Component
+// Custom style to be included in the component
+const styles = `
+  .pulse-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .pulse-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    transform: scale(1);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  }
+  .modern-map {
+    border-radius: 0.75rem;
+  }
+  .modern-popup {
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  .modern-icon {
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+  }
+`;
+
+// Modern Routing Control Component with dynamic updates
 const RoutingMachine = ({ startPoint, endPoint, color }) => {
   const map = useMap();
-  
+  const routingControlRef = useRef(null);
+
   useEffect(() => {
     if (!startPoint || !endPoint) return;
 
-    // Create routing control
+    // Remove existing control if it exists
+    if (routingControlRef.current) {
+      map.removeControl(routingControlRef.current);
+    }
+
+    // Create routing control with modern styling
     const routingControl = L.Routing.control({
       waypoints: [
         L.latLng(startPoint.lat, startPoint.lng),
         L.latLng(endPoint.lat, endPoint.lng)
       ],
       lineOptions: {
-        styles: [
-          { color, weight: 4, opacity: 0.7 }
-        ]
+        styles: [{
+          color,
+          weight: 5,
+          opacity: 0.8,
+          dashArray: '0',
+          lineCap: 'round'
+        }]
       },
+      routeWhileDragging: false,
       addWaypoints: false,
       draggableWaypoints: false,
       fitSelectedRoutes: true,
       showAlternatives: false,
-      createMarker: () => null // Don't create default markers
+      createMarker: () => null
     }).addTo(map);
-    
-    // Clean up on unmount
+
+    routingControlRef.current = routingControl;
+
     return () => {
-      map.removeControl(routingControl);
+      if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+      }
     };
-  }, [map, startPoint, endPoint, color]);
-  
+  }, [map, color]);
+
+  // Update route when points change
+  useEffect(() => {
+    if (routingControlRef.current && startPoint && endPoint) {
+      routingControlRef.current.setWaypoints([
+        L.latLng(startPoint.lat, startPoint.lng),
+        L.latLng(endPoint.lat, endPoint.lng)
+      ]);
+    }
+  }, [startPoint, endPoint]);
+
   return null;
+};
+
+// Custom icons with modern styling
+const createPulseIcon = (color) => {
+  return L.divIcon({
+    className: 'pulse-icon',
+    iconSize: [20, 20],
+    html: `<div class="pulse-dot" style="background-color: ${color}"></div>`
+  });
+};
+
+// SVG icons for better visuals
+const createSvgIcon = (type) => {
+  const policeIcon = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1e40af" width="36" height="36">
+      <circle cx="12" cy="12" r="12" fill="white"/>
+      <circle cx="12" cy="12" r="10" fill="#3b82f6"/>
+      <path d="M12 4l1.5 4.5h5l-4 3 1.5 4.5-4-3-4 3 1.5-4.5-4-3h5z" fill="white"/>
+    </svg>
+  `;
+  
+  const hospitalIcon = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#047857" width="36" height="36">
+      <circle cx="12" cy="12" r="12" fill="white"/>
+      <circle cx="12" cy="12" r="10" fill="#10b981"/>
+      <rect x="7" y="10" width="10" height="4" fill="white"/>
+      <rect x="10" y="7" width="4" height="10" fill="white"/>
+    </svg>
+  `;
+  
+  return L.divIcon({
+    className: 'custom-div-icon',
+    html: type === 'police' ? policeIcon : hospitalIcon,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
+  });
 };
 
 const ReportResponse = () => {
@@ -54,22 +150,14 @@ const ReportResponse = () => {
   const [error, setError] = useState(null);
   const [locationGranted, setLocationGranted] = useState(false);
   const [isFetchingServices, setIsFetchingServices] = useState(false);
-  const [activeRoute, setActiveRoute] = useState(null); // 'police', 'hospital', or null
+  const [activeRoute, setActiveRoute] = useState(null);
+  const watchIdRef = useRef(null);
+  const permissionDenied = useRef(false);
 
-  // Custom icons
+  // Icons using custom SVGs for better visualization
   const icons = {
-    user: new L.Icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/447/447031.png',
-      iconSize: [32, 32],
-    }),
-    police: new L.Icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/2830/2830312.png',
-      iconSize: [32, 32],
-    }),
-    hospital: new L.Icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/2961/2961937.png',
-      iconSize: [32, 32],
-    })
+    police: createSvgIcon('police'),
+    hospital: createSvgIcon('hospital')
   };
 
   // Format distance in kilometers
@@ -79,21 +167,29 @@ const ReportResponse = () => {
       ? `${Math.round(meters)} meters` 
       : `${(meters/1000).toFixed(1)} km`;
   };
-  
+
   // Format phone number
   const formatPhone = (phone) => {
     if (!phone) return null;
     return phone;
   };
 
+  // Check if cache is valid
+  const isCacheValid = () => {
+    if (!locationCache.timestamp) return false;
+    const now = Date.now();
+    return (now - locationCache.timestamp) < locationCache.CACHE_EXPIRY;
+  };
+
   // Fetch nearest services with caching
   const fetchNearestServices = useCallback(async (lat, lng) => {
     setIsFetchingServices(true);
     
-    // Check cache first
+    // Check cache first - more robust cache validation
     if (locationCache.services && 
         locationCache.coords?.lat === lat && 
-        locationCache.coords?.lng === lng) {
+        locationCache.coords?.lng === lng &&
+        isCacheValid()) {
       setNearestServices(locationCache.services);
       setIsFetchingServices(false);
       return;
@@ -115,17 +211,42 @@ const ReportResponse = () => {
     } catch (err) {
       console.error("Fetch error:", err);
       setError("Failed to load service data");
+      
+      // If cache is available but expired, still use it as fallback
+      if (locationCache.services) {
+        setNearestServices(locationCache.services);
+      }
     } finally {
       setIsFetchingServices(false);
     }
   }, []);
 
-  // Get user location with caching
+  // Function to stop watching position
+  const stopWatchingPosition = useCallback(() => {
+    if (watchIdRef.current) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  }, []);
+
+  // Get user location with better error handling
   const requestLocation = useCallback(() => {
     setLoading(true);
     setError(null);
-    setLocationGranted(false);
-    setActiveRoute(null); // Clear any active routes
+    
+    // Don't reset locationGranted if it was already true
+    if (!locationGranted) {
+      setLocationGranted(false);
+    }
+    
+    setActiveRoute(null);
+    
+    // If permission was previously denied, show error immediately
+    if (permissionDenied.current) {
+      setError("Location access denied. Please enable permissions in your browser settings.");
+      setLoading(false);
+      return;
+    }
     
     if (!navigator.geolocation) {
       setError("Your browser doesn't support geolocation");
@@ -133,55 +254,172 @@ const ReportResponse = () => {
       return;
     }
 
+    // Clean up previous watcher
+    stopWatchingPosition();
+
+    // Check if we have a recent cached location first
+    if (locationCache.coords && isCacheValid()) {
+      setUserLocation(locationCache.coords);
+      if (locationCache.services) {
+        setNearestServices(locationCache.services);
+      } else {
+        fetchNearestServices(locationCache.coords.lat, locationCache.coords.lng);
+      }
+      setLocationGranted(true);
+      setLoading(false);
+      
+      // Still try to update in the background
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+          fetchNearestServices(latitude, longitude);
+          setupPositionWatcher(latitude, longitude);
+        },
+        (err) => handleLocationError(err, true), // Silent error handling
+        { 
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+      
+      return;
+    }
+
+    // Get current position
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         
-        // Check cache
-        if (locationCache.coords?.lat === latitude && 
-            locationCache.coords?.lng === longitude) {
-          setUserLocation(locationCache.coords);
-          setNearestServices(locationCache.services);
-          setLocationGranted(true);
-          setLoading(false);
-          return;
-        }
-
         setUserLocation({ lat: latitude, lng: longitude });
         setLocationGranted(true);
         await fetchNearestServices(latitude, longitude);
         setLoading(false);
+
+        setupPositionWatcher(latitude, longitude);
       },
-      (err) => {
-        console.error("Location error:", err);
-        if (err.code === 1) {
-          setError("Location access denied. Please enable permissions.");
-        } else {
-          setError("Couldn't determine your location");
-        }
-        setLoading(false);
-      },
+      (err) => handleLocationError(err),
       { 
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000 // Accept cached location up to 1 minute old
+        timeout: 15000, // Increased timeout
+        maximumAge: 60000
       }
     );
-  }, [fetchNearestServices]);
+  }, [fetchNearestServices, locationGranted, stopWatchingPosition]);
+
+  // Handle location errors properly
+  const handleLocationError = useCallback((err, silent = false) => {
+    console.error("Location error:", err);
+    
+    if (!silent) {
+      if (err.code === 1) {
+        // Permission denied - remember this to avoid repeated prompts
+        permissionDenied.current = true;
+        setError("Location access denied. Please enable permissions in your browser settings.");
+      } else if (err.code === 2) {
+        setError("Your location couldn't be determined. Please check your device's location settings.");
+      } else if (err.code === 3) {
+        setError("Location request timed out. Please try again.");
+      } else {
+        setError("Couldn't determine your location");
+      }
+      setLoading(false);
+    }
+  }, []);
+
+  // Setup position watcher with better error handling
+  const setupPositionWatcher = useCallback((initialLat, initialLng) => {
+    // Only set up watcher if we haven't already been denied permission
+    if (permissionDenied.current) return;
+    
+    // Store initial position in case watcher fails
+    if (!locationCache.coords) {
+      locationCache.coords = { lat: initialLat, lng: initialLng };
+      locationCache.timestamp = Date.now();
+    }
+    
+    try {
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const newLocation = { lat: latitude, lng: longitude };
+          
+          // Update cache with latest position
+          locationCache.coords = newLocation;
+          locationCache.timestamp = Date.now();
+          
+          // Only update if position changed significantly (more than 50 meters)
+          if (userLocation) {
+            const distance = L.latLng(userLocation.lat, userLocation.lng)
+              .distanceTo(L.latLng(latitude, longitude));
+            
+            if (distance > 50) {
+              setUserLocation(newLocation);
+              
+              // Optionally update services if moved significantly (more than 500m)
+              if (distance > 500) {
+                fetchNearestServices(latitude, longitude);
+              }
+            }
+          } else {
+            setUserLocation(newLocation);
+          }
+        },
+        (err) => {
+          console.error("Watch position error:", err);
+          // Don't show errors for watch position, just log them
+          // Only clear watcher on permission denied
+          if (err.code === 1) {
+            permissionDenied.current = true;
+            stopWatchingPosition();
+          }
+        },
+        { 
+          enableHighAccuracy: true, 
+          maximumAge: 30000, // Increased for better performance
+          timeout: 27000 // Increased timeout to prevent frequent timeouts
+        }
+      );
+    } catch (e) {
+      console.error("Error setting up position watcher:", e);
+      // Fallback to the position we already have
+    }
+  }, [fetchNearestServices, userLocation, stopWatchingPosition]);
 
   // Handle Go button click
   const handleGoClick = (serviceType) => {
-    // Toggle route if clicking the same service again
-    if (activeRoute === serviceType) {
-      setActiveRoute(null);
-    } else {
-      setActiveRoute(serviceType);
-    }
+    setActiveRoute(activeRoute === serviceType ? null : serviceType);
   };
+
+  // Clean up watcher on unmount
+  useEffect(() => {
+    return () => {
+      stopWatchingPosition();
+    };
+  }, [stopWatchingPosition]);
 
   // Initial load
   useEffect(() => {
     requestLocation();
+    
+    // Set up permission change listener
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(permissionStatus => {
+        // Listen for permission changes
+        permissionStatus.onchange = () => {
+          if (permissionStatus.state === 'granted') {
+            permissionDenied.current = false;
+            requestLocation();
+          } else if (permissionStatus.state === 'denied') {
+            permissionDenied.current = true;
+            setError("Location access denied. Please enable permissions in your browser settings.");
+          }
+        };
+      }).catch(e => {
+        console.error("Permission query error:", e);
+      });
+    }
   }, [requestLocation]);
 
   const renderLocationError = () => (
@@ -195,6 +433,17 @@ const ReportResponse = () => {
         <LocateFixed className="w-5 h-5" />
         {error?.includes("denied") ? "Enable Location Access" : "Retry Location Detection"}
       </button>
+      
+      {error?.includes("denied") && (
+        <div className="mt-4 text-sm text-gray-600 max-w-md">
+          <p>To enable location:</p>
+          <ul className="list-disc pl-5 mt-2 text-left">
+            <li>Click the lock/info icon in your browser's address bar</li>
+            <li>Find "Location" permissions and set to "Allow"</li>
+            <li>Refresh this page after changing settings</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 
@@ -207,31 +456,43 @@ const ReportResponse = () => {
 
   const renderEmergencyServices = () => (
     <>
-      {/* Map Display */}
-      <div className="rounded-lg overflow-hidden shadow-lg mb-6">
+      {/* Modern Map Display */}
+      <div className="rounded-lg overflow-hidden shadow-lg mb-6 border border-gray-200">
         <MapContainer
           center={[userLocation.lat, userLocation.lng]}
-          zoom={13}
+          zoom={15}
           style={{ height: '60vh', minHeight: '300px', width: '100%' }}
-          className="z-0"
+          className="z-0 modern-map"
         >
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'
           />
-          <Marker position={[userLocation.lat, userLocation.lng]} icon={icons.user}>
-            <Popup>Your Location</Popup>
+          
+          {/* User location with pulse effect */}
+          <Marker 
+            position={[userLocation.lat, userLocation.lng]} 
+            icon={createPulseIcon('#3b82f6')}
+          >
+            <Popup className="modern-popup">Your Location</Popup>
           </Marker>
           
           {nearestServices.police && (
             <Marker position={[nearestServices.police.lat, nearestServices.police.lng]} icon={icons.police}>
-              <Popup>
-                <div className="text-sm">
-                  <strong className="text-base">Police Station</strong><br/>
-                  {nearestServices.police.name || 'Police Station'}<br/>
-                  {formatDistance(nearestServices.police.distance)} away
+              <Popup className="modern-popup">
+                <div className="text-sm space-y-1">
+                  <strong className="text-base block text-blue-600">Police Station</strong>
+                  <p>{nearestServices.police.name || 'Police Station'}</p>
+                  <div className="flex items-center gap-2 text-blue-500">
+                    <Navigation className="w-4 h-4" />
+                    <span>{formatDistance(nearestServices.police.distance)} away</span>
+                  </div>
                   {nearestServices.police.phone && (
-                    <div className="mt-2">
-                      <strong>Phone:</strong> {nearestServices.police.phone}
+                    <div className="mt-2 flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-blue-500" />
+                      <a href={`tel:${nearestServices.police.phone}`} className="text-blue-600 hover:underline">
+                        {formatPhone(nearestServices.police.phone)}
+                      </a>
                     </div>
                   )}
                 </div>
@@ -241,14 +502,20 @@ const ReportResponse = () => {
           
           {nearestServices.hospital && (
             <Marker position={[nearestServices.hospital.lat, nearestServices.hospital.lng]} icon={icons.hospital}>
-              <Popup>
-                <div className="text-sm">
-                  <strong className="text-base">Hospital</strong><br/>
-                  {nearestServices.hospital.name || 'Hospital'}<br/>
-                  {formatDistance(nearestServices.hospital.distance)} away
+              <Popup className="modern-popup">
+                <div className="text-sm space-y-1">
+                  <strong className="text-base block text-green-600">Hospital</strong>
+                  <p>{nearestServices.hospital.name || 'Hospital'}</p>
+                  <div className="flex items-center gap-2 text-green-500">
+                    <Navigation className="w-4 h-4" />
+                    <span>{formatDistance(nearestServices.hospital.distance)} away</span>
+                  </div>
                   {nearestServices.hospital.phone && (
-                    <div className="mt-2">
-                      <strong>Phone:</strong> {nearestServices.hospital.phone}
+                    <div className="mt-2 flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-green-500" />
+                      <a href={`tel:${nearestServices.hospital.phone}`} className="text-green-600 hover:underline">
+                        {formatPhone(nearestServices.hospital.phone)}
+                      </a>
                     </div>
                   )}
                 </div>
@@ -275,129 +542,147 @@ const ReportResponse = () => {
         </MapContainer>
       </div>
 
-      {/* Map Legend */}
-      <div className="flex flex-wrap gap-2 justify-center mb-4">
-        <div className="flex items-center text-gray-500 text-xs sm:text-sm">
-          <div className="w-3 h-3 rounded-full bg-blue-600 mr-2"></div>
-          <span>Your Location</span>
+      {/* Modern Map Legend */}
+      <div className="flex flex-wrap gap-3 justify-center mb-6">
+        <div className="flex items-center bg-white px-3 py-1.5 rounded-full shadow-xs border border-gray-100">
+          <div className="w-3 h-3 rounded-full bg-blue-600 mr-2 pulse-dot"></div>
+          <span className="text-xs font-medium text-gray-700">Your Location</span>
         </div>
-        <div className="flex items-center text-gray-500 text-xs sm:text-sm">
+        <div className="flex items-center bg-white px-3 py-1.5 rounded-full shadow-xs border border-gray-100">
           <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-          <span>Police Station</span>
+          <span className="text-xs font-medium text-gray-700">Police Station</span>
         </div>
-        <div className="flex items-center text-gray-500 text-xs sm:text-sm">
+        <div className="flex items-center bg-white px-3 py-1.5 rounded-full shadow-xs border border-gray-100">
           <div className="w-3 h-3 rounded-full bg-green-600 mr-2"></div>
-          <span>Hospital</span>
+          <span className="text-xs font-medium text-gray-700">Hospital</span>
         </div>
         {activeRoute && (
-          <div className="flex items-center text-gray-500 text-xs sm:text-sm">
-            <div className="w-4 h-1 bg-blue-500 mr-2"></div>
-            <span>Route to {activeRoute === 'police' ? 'Police' : 'Hospital'}</span>
+          <div className="flex items-center bg-white px-3 py-1.5 rounded-full shadow-xs border border-gray-100">
+            <div className="w-4 h-1.5 rounded-full bg-blue-500 mr-2"></div>
+            <span className="text-xs font-medium text-gray-700">Route to {activeRoute === 'police' ? 'Police' : 'Hospital'}</span>
           </div>
         )}
       </div>
 
-      {/* Services Information */}
+      {/* Modern Services Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`rounded-lg p-4 sm:p-5 ${nearestServices.police ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50 border border-gray-200'}`}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="bg-blue-100 p-2 rounded-full">
-              <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+        <div className={`rounded-xl p-5 transition-all ${nearestServices.police ? 
+          'bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm' : 
+          'bg-gray-50 border border-gray-200'}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-blue-100 p-2.5 rounded-xl">
+              <Shield className="w-6 h-6 text-blue-600" />
             </div>
-            <h3 className="font-semibold text-base sm:text-lg text-gray-800">Police</h3>
+            <h3 className="font-semibold text-lg text-gray-800">Nearest Police</h3>
           </div>
           
           {nearestServices.police ? (
-            <div className="space-y-2">
-              <p className="text-gray-700 font-medium text-sm sm:text-base">{nearestServices.police.name}</p>
-              <div className="flex items-center gap-2 text-blue-600 text-sm">
-                <Navigation className="w-4 h-4" />
-                <span>{formatDistance(nearestServices.police.distance)}</span>
+            <div className="space-y-3">
+              <p className="text-gray-800 font-medium">{nearestServices.police.name}</p>
+              <div className="flex items-center gap-2 text-blue-600">
+                <Navigation className="w-5 h-5" />
+                <span className="font-medium">{formatDistance(nearestServices.police.distance)}</span>
               </div>
               {nearestServices.police.phone && (
-                <div className="flex items-center gap-2 text-blue-700 mt-2 text-sm">
-                  <Phone className="w-4 h-4" />
-                  <a href={`tel:${nearestServices.police.phone}`} className="hover:underline">
-                    {nearestServices.police.phone}
+                <div className="flex items-center gap-2 text-blue-700 mt-3">
+                  <Phone className="w-5 h-5" />
+                  <a href={`tel:${nearestServices.police.phone}`} className="hover:underline font-medium">
+                    {formatPhone(nearestServices.police.phone)}
                   </a>
                 </div>
               )}
               
-              {/* Go Button */}
               <button 
                 onClick={() => handleGoClick('police')}
-                className={`mt-3 ${
+                className={`mt-4 ${
                   activeRoute === 'police' 
-                    ? 'bg-red-500 hover:bg-red-600' 
-                    : 'bg-blue-600 hover:bg-blue-700'
-                } text-white font-medium py-2 px-4 rounded flex items-center gap-2 w-full justify-center transition-colors text-sm sm:text-base`}
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-100' 
+                    : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-100'
+                } text-white font-medium py-2.5 px-5 rounded-xl transition-all flex items-center gap-2 w-full justify-center shadow-sm`}
               >
                 {activeRoute === 'police' ? (
-                  <>Hide Directions</>
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Hide Route
+                  </>
                 ) : (
-                  <>Go <ArrowRight className="w-4 h-4" /></>
+                  <>
+                    Get Directions
+                    <ArrowRight className="w-4 h-4" />
+                  </>
                 )}
               </button>
             </div>
           ) : !isFetchingServices && (
-            <p className="text-gray-500 italic text-sm sm:text-base">No police stations found nearby</p>
+            <p className="text-gray-500 italic">No police stations found nearby</p>
           )}
         </div>
         
-        <div className={`rounded-lg p-4 sm:p-5 ${nearestServices.hospital ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border border-gray-200'}`}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="bg-green-100 p-2 rounded-full">
-              <Hospital className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+        <div className={`rounded-xl p-5 transition-all ${nearestServices.hospital ? 
+          'bg-gradient-to-br from-green-50 to-green-100 border border-green-200 shadow-sm' : 
+          'bg-gray-50 border border-gray-200'}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-green-100 p-2.5 rounded-xl">
+              <Hospital className="w-6 h-6 text-green-600" />
             </div>
-            <h3 className="font-semibold text-base sm:text-lg text-gray-800">Hospital</h3>
+            <h3 className="font-semibold text-lg text-gray-800">Nearest Hospital</h3>
           </div>
           
           {nearestServices.hospital ? (
-            <div className="space-y-2">
-              <p className="text-gray-700 font-medium text-sm sm:text-base">{nearestServices.hospital.name}</p>
-              <div className="flex items-center gap-2 text-green-600 text-sm">
-                <Navigation className="w-4 h-4" />
-                <span>{formatDistance(nearestServices.hospital.distance)}</span>
+            <div className="space-y-3">
+              <p className="text-gray-800 font-medium">{nearestServices.hospital.name}</p>
+              <div className="flex items-center gap-2 text-green-600">
+                <Navigation className="w-5 h-5" />
+                <span className="font-medium">{formatDistance(nearestServices.hospital.distance)}</span>
               </div>
               {nearestServices.hospital.phone && (
-                <div className="flex items-center gap-2 text-green-700 mt-2 text-sm">
-                  <Phone className="w-4 h-4" />
-                  <a href={`tel:${nearestServices.hospital.phone}`} className="hover:underline">
-                    {nearestServices.hospital.phone}
+                <div className="flex items-center gap-2 text-green-700 mt-3">
+                  <Phone className="w-5 h-5" />
+                  <a href={`tel:${nearestServices.hospital.phone}`} className="hover:underline font-medium">
+                    {formatPhone(nearestServices.hospital.phone)}
                   </a>
                 </div>
               )}
               
-              {/* Go Button */}
               <button 
                 onClick={() => handleGoClick('hospital')}
-                className={`mt-3 ${
+                className={`mt-4 ${
                   activeRoute === 'hospital' 
-                    ? 'bg-red-500 hover:bg-red-600' 
-                    : 'bg-green-600 hover:bg-green-700'
-                } text-white font-medium py-2 px-4 rounded flex items-center gap-2 w-full justify-center transition-colors text-sm sm:text-base`}
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-100' 
+                    : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-green-100'
+                } text-white font-medium py-2.5 px-5 rounded-xl transition-all flex items-center gap-2 w-full justify-center shadow-sm`}
               >
                 {activeRoute === 'hospital' ? (
-                  <>Hide Directions</>
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Hide Route
+                  </>
                 ) : (
-                  <>Go <ArrowRight className="w-4 h-4" /></>
+                  <>
+                    Get Directions
+                    <ArrowRight className="w-4 h-4" />
+                  </>
                 )}
               </button>
             </div>
           ) : !isFetchingServices && (
-            <p className="text-gray-500 italic text-sm sm:text-base">No hospitals found nearby</p>
+            <p className="text-gray-500 italic">No hospitals found nearby</p>
           )}
         </div>
       </div>
       
-      {/* Refresh Button */}
-      <div className="mt-6 text-center">
+      {/* Modern Refresh Button */}
+      <div className="mt-8 text-center">
         <button 
           onClick={requestLocation}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto text-sm sm:text-base"
+          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-2.5 px-8 rounded-xl transition-all flex items-center gap-2 mx-auto shadow-sm"
         >
-          <LocateFixed className="w-4 h-4 sm:w-5 sm:h-5" />
-          Refresh Location
+          <LocateFixed className="w-5 h-5" />
+          Refresh My Location
         </button>
       </div>
     </>
@@ -405,37 +690,63 @@ const ReportResponse = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
-        {/* Header */}
-        <div className="bg-blue-600 text-white p-4 sm:p-5 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Map className="w-5 h-5 sm:w-6 sm:h-6" />
-            <h2 className="text-lg sm:text-xl font-semibold">Emergency Services Near You</h2>
-          </div>
-          <div className="text-white text-xs bg-blue-700 px-2 sm:px-3 py-1 rounded-full">
-            Emergency
+      {/* Insert style tag properly */}
+      <style dangerouslySetInnerHTML={{ __html: styles }} />
+      
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+        {/* Modern Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 sm:p-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Map className="w-6 h-6" />
+            <h2 className="text-xl font-semibold">Emergency Services Near You</h2>
           </div>
         </div>
         
-        <div className="p-4 sm:p-6">
-          {/* Loading state */}
+        <div className="p-5 sm:p-6">
           {loading && renderLoadingState()}
-          
-          {/* Error state - only show when there's an error AND we don't have location data */}
           {error && !locationGranted && renderLocationError()}
-          
-          {/* Service Loading state - only shown when we have location but are fetching services */}
           {locationGranted && isFetchingServices && !loading && (
             <div className="flex items-center justify-center py-6 text-gray-600">
-              <Loader className="w-6 h-6 animate-spin mr-3" />
-              <p>Finding nearby services...</p>
+              <Loader className="w-6 h-6 animate-spin mr-3 text-blue-600" />
+              <p className="font-medium">Finding nearby services...</p>
             </div>
           )}
-          
-          {/* Map and Services - only show when we have location data */}
           {locationGranted && userLocation && renderEmergencyServices()}
         </div>
       </div>
+
+      {/* Add CSS for pulse animation */}
+      <style jsx global>{`
+        .pulse-icon {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .pulse-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+          transform: scale(1);
+          animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .modern-map {
+          border-radius: 0.75rem;
+        }
+        .modern-popup {
+          border-radius: 0.5rem;
+          padding: 0.5rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .modern-icon {
+          filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+        }
+      `}</style>
     </div>
   );
 };
