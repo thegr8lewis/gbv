@@ -19,7 +19,91 @@ from .serializers import SupportMessageSerializer, UpdateSerializer
 from .models import SupportMessage, Update, Event
 from .serializers import SupportMessageSerializer, UpdateSerializer, EventSerializer
 
+import requests
+import math
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
+@csrf_exempt
+def nearest_services(request):
+    try:
+        lat = float(request.GET.get('lat'))
+        lng = float(request.GET.get('lng'))
+        radius = int(request.GET.get('radius', 5000))  # Default 5km, can be increased
+        
+        # More comprehensive Overpass query
+        overpass_query = f"""
+        [out:json];
+        (
+          node["amenity"="police"](around:{radius},{lat},{lng});
+          way["amenity"="police"](around:{radius},{lat},{lng});
+          relation["amenity"="police"](around:{radius},{lat},{lng});
+          
+          node["amenity"="hospital"](around:{radius},{lat},{lng});
+          way["amenity"="hospital"](around:{radius},{lat},{lng});
+          relation["amenity"="hospital"](around:{radius},{lat},{lng});
+          
+          node["emergency"="hospital"](around:{radius},{lat},{lng});
+        );
+        out center;
+        """
+        
+        response = requests.get(
+            "https://overpass-api.de/api/interpreter",
+            params={'data': overpass_query},
+            timeout=10
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        services = {'police': [], 'hospital': []}
+        
+        def calculate_distance(lat1, lng1, lat2, lng2):
+            # More accurate distance calculation
+            R = 6371000
+            φ1 = math.radians(lat1)
+            φ2 = math.radians(lat2)
+            Δφ = math.radians(lat2-lat1)
+            Δλ = math.radians(lng2-lng1)
+            
+            a = math.sin(Δφ/2)**2 + math.cos(φ1)*math.cos(φ2)*math.sin(Δλ/2)**2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            return R * c
+        
+        for element in data.get('elements', []):
+            if element.get('tags', {}).get('amenity') == 'police':
+                services['police'].append({
+                    'name': element.get('tags', {}).get('name', 'Police Station'),
+                    'lat': element.get('lat', element.get('center', {}).get('lat')),
+                    'lng': element.get('lon', element.get('center', {}).get('lon')),
+                    'distance': calculate_distance(lat, lng, 
+                        element.get('lat', element.get('center', {}).get('lat')),
+                        element.get('lon', element.get('center', {}).get('lon')))
+                })
+            elif element.get('tags', {}).get('amenity') == 'hospital' or \
+                 element.get('tags', {}).get('emergency') == 'hospital':
+                services['hospital'].append({
+                    'name': element.get('tags', {}).get('name', 'Hospital'),
+                    'lat': element.get('lat', element.get('center', {}).get('lat')),
+                    'lng': element.get('lon', element.get('center', {}).get('lon')),
+                    'distance': calculate_distance(lat, lng,
+                        element.get('lat', element.get('center', {}).get('lat')),
+                        element.get('lon', element.get('center', {}).get('lon')))
+                })
+        
+        # Find nearest of each type
+        result = {
+            'police': min(services['police'], key=lambda x: x['distance']) if services['police'] else None,
+            'hospital': min(services['hospital'], key=lambda x: x['distance']) if services['hospital'] else None
+        }
+        
+        return JsonResponse(result)
+        
+    except Exception as e:
+        return JsonResponse(
+            {'error': str(e), 'message': 'Service lookup failed'},
+            status=500
+        )
 
 class EventListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]

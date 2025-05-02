@@ -3,9 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from reports.views import SubmitReportView, ListReportsView, UpdateReportStatusView,LoginView, AdminDetailsView, ReportsCountView, SupportMessageListView, SupportMessageDetailView, UpdateListView, UpdateDetailView, PublicUpdateListView, EventListView, EventDetailView, PublicEventListView
-
-
+from reports.views import SubmitReportView, ListReportsView, UpdateReportStatusView,LoginView, AdminDetailsView, ReportsCountView, SupportMessageListView, SupportMessageDetailView, UpdateListView, UpdateDetailView, PublicUpdateListView, EventListView, EventDetailView, PublicEventListView, nearest_services
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/reports/', SubmitReportView.as_view(), name='submit-report'),
@@ -22,6 +20,7 @@ urlpatterns = [
     path('api/events/', EventListView.as_view(), name='events-list'),
     path('api/events/<int:id>/', EventDetailView.as_view(), name='event-detail'),
     path('api/public/events/', PublicEventListView.as_view(), name='public-events-list'),
+    path('api/nearest-services/', nearest_services, name='nearest-services'),
 ]
 
 if settings.DEBUG:
