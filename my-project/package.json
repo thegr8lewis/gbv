@@ -10,10 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^1.16.8",
     "axios": "^1.8.4",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.488.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^6.30.0",
     "sweetalert2": "^11.19.1",
     "sweetalert2-react-content": "^5.1.0"
