@@ -65,6 +65,7 @@ export default function AdminLayout({ children, activeNavItem }) {
     { name: 'Dashboard', icon: <BarChart2 className="w-5 h-5" /> },
     { name: 'Reports', icon: <FileText className="w-5 h-5" /> },
     { name: 'Support', icon: <MessageSquare className="w-5 h-5" /> },
+    { name: 'Updates', icon: <MessageSquare className="w-5 h-5" /> },
     { name: 'Events', icon: <Calendar className="w-5 h-5" /> },
     { name: 'Settings', icon: <Settings className="w-5 h-5" /> }
   ];

@@ -1,24 +1,22 @@
-// components/admin/EventsComponent.jsx
+// pages/admin/updates.jsx
 import { useState, useEffect } from 'react';
-import { Calendar, Edit2, Trash2, X, Plus, MapPin, Clock, PlusCircle,Send  } from 'lucide-react';
+import { Calendar, Bell, Edit2, Trash2, X, Send, PlusCircle } from 'lucide-react';
 import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
-export default function EventsComponent() {
+export default function Updates() {
   // State management
-  const [events, setEvents] = useState([]);
-  const [newEvent, setNewEvent] = useState({
+  const [updates, setUpdates] = useState([]);
+  const [newUpdate, setNewUpdate] = useState({
     title: "",
-    description: "",
-    date: new Date().toISOString().split('T')[0],
-    time: "18:00",
-    location: ""
+    content: "",
+    date: new Date().toISOString().split('T')[0]
   });
-  const [editingEventId, setEditingEventId] = useState(null);
+  const [editingUpdateId, setEditingUpdateId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
   
   // Modal states
-  const [showEventModal, setShowEventModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState({ id: null, type: null, title: null });
 
@@ -27,17 +25,17 @@ export default function EventsComponent() {
     return localStorage.getItem('auth_token');
   };
 
-  // Fetch events
-  const fetchEvents = async () => {
+  // Fetch data function
+  const fetchUpdates = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/events/', {
+      const response = await fetch('http://localhost:8000/api/updates/', {
         headers: { 'Authorization': `Token ${getAuthToken()}` }
       });
       if (response.ok) {
-        setEvents(await response.json());
+        setUpdates(await response.json());
       } else {
-        throw new Error('Failed to fetch events');
+        throw new Error('Failed to fetch updates');
       }
     } catch (error) {
       setStatusMessage({ type: 'error', message: error.message });
@@ -47,22 +45,13 @@ export default function EventsComponent() {
   };
 
   useEffect(() => {
-    fetchEvents();
+    fetchUpdates();
   }, []);
 
-  // Helper functions
+  // Helper function
   const formatDate = (dateString) => {
     const options = { day: 'numeric', month: 'short', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
   };
 
   // Delete confirmation handlers
@@ -79,17 +68,16 @@ export default function EventsComponent() {
   const executeDelete = async () => {
     setIsLoading(true);
     try {
-      const endpoint = `http://localhost:8000/api/events/${itemToDelete.id}/`;
-      const response = await fetch(endpoint, {
+      const response = await fetch(`http://localhost:8000/api/updates/${itemToDelete.id}/`, {
         method: 'DELETE',
         headers: { 'Authorization': `Token ${getAuthToken()}` }
       });
       
       if (response.ok) {
-        setEvents(events.filter(event => event.id !== itemToDelete.id));
-        setStatusMessage({ type: 'success', message: 'Event deleted successfully!' });
+        setUpdates(updates.filter(update => update.id !== itemToDelete.id));
+        setStatusMessage({ type: 'success', message: 'Update deleted successfully!' });
       } else {
-        throw new Error('Failed to delete event');
+        throw new Error('Failed to delete update');
       }
     } catch (error) {
       setStatusMessage({ type: 'error', message: error.message });
@@ -100,39 +88,43 @@ export default function EventsComponent() {
     }
   };
 
-  // Event handlers
-  const handleEventInputChange = (e) => {
+  // Update handlers
+  const handleUpdateInputChange = (e) => {
     const { name, value } = e.target;
-    setNewEvent({ ...newEvent, [name]: value });
+    if (editingUpdateId) {
+      setUpdates(updates.map(update => 
+        update.id === editingUpdateId ? { ...update, [name]: value } : update
+      ));
+    } else {
+      setNewUpdate({ ...newUpdate, [name]: value });
+    }
   };
 
-  const handleCreateEvent = async (e) => {
+  const handleCreateUpdate = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/events/', {
+      const response = await fetch('http://localhost:8000/api/updates/', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Token ${getAuthToken()}`
         },
-        body: JSON.stringify(newEvent)
+        body: JSON.stringify(newUpdate)
       });
       
       if (response.ok) {
-        const createdEvent = await response.json();
-        setEvents([createdEvent, ...events]);
-        setNewEvent({
+        const createdUpdate = await response.json();
+        setUpdates([createdUpdate, ...updates]);
+        setNewUpdate({
           title: "",
-          description: "",
-          date: new Date().toISOString().split('T')[0],
-          time: "18:00",
-          location: ""
+          content: "",
+          date: new Date().toISOString().split('T')[0]
         });
-        setShowEventModal(false);
-        setStatusMessage({ type: 'success', message: 'Event created successfully!' });
+        setShowUpdateModal(false);
+        setStatusMessage({ type: 'success', message: 'Update published successfully!' });
       } else {
-        throw new Error('Failed to create event');
+        throw new Error('Failed to create update');
       }
     } catch (error) {
       setStatusMessage({ type: 'error', message: error.message });
@@ -141,41 +133,37 @@ export default function EventsComponent() {
     }
   };
 
-  const handleEditEvent = (eventId) => {
-    const eventToEdit = events.find(event => event.id === eventId);
-    if (eventToEdit) {
-      setEditingEventId(eventId);
-      setNewEvent({
-        title: eventToEdit.title,
-        description: eventToEdit.description,
-        date: eventToEdit.date,
-        time: eventToEdit.time,
-        location: eventToEdit.location
-      });
-      setShowEventModal(true);
-    }
+  const handleEditUpdate = (updateId) => {
+    setEditingUpdateId(updateId);
+    const updateToEdit = updates.find(update => update.id === updateId);
+    setNewUpdate({
+      title: updateToEdit.title,
+      content: updateToEdit.content,
+      date: updateToEdit.date
+    });
+    setShowUpdateModal(true);
   };
 
-  const handleSaveEvent = async (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/events/${editingEventId}/`, {
+      const response = await fetch(`http://localhost:8000/api/updates/${editingUpdateId}/`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Token ${getAuthToken()}`
         },
-        body: JSON.stringify(newEvent)
+        body: JSON.stringify(newUpdate)
       });
       
       if (response.ok) {
-        setStatusMessage({ type: 'success', message: 'Event saved successfully!' });
-        setEditingEventId(null);
-        setShowEventModal(false);
-        fetchEvents();
+        setStatusMessage({ type: 'success', message: 'Update saved successfully!' });
+        setEditingUpdateId(null);
+        setShowUpdateModal(false);
+        fetchUpdates();
       } else {
-        throw new Error('Failed to save event');
+        throw new Error('Failed to save update');
       }
     } catch (error) {
       setStatusMessage({ type: 'error', message: error.message });
@@ -184,38 +172,34 @@ export default function EventsComponent() {
     }
   };
 
-  const handleCancelEvent = () => {
-    setEditingEventId(null);
-    setShowEventModal(false);
-    setNewEvent({
+  const handleCancelEdit = () => {
+    setEditingUpdateId(null);
+    setShowUpdateModal(false);
+    setNewUpdate({
       title: "",
-      description: "",
-      date: new Date().toISOString().split('T')[0],
-      time: "18:00",
-      location: ""
+      content: "",
+      date: new Date().toISOString().split('T')[0]
     });
   };
 
-  const openEventModal = () => {
-    setShowEventModal(true);
+  const openUpdateModal = () => {
+    setShowUpdateModal(true);
   };
 
-  const closeEventModal = () => {
-    setShowEventModal(false);
-    if (editingEventId) {
-      setEditingEventId(null);
-      setNewEvent({
+  const closeUpdateModal = () => {
+    setShowUpdateModal(false);
+    if (editingUpdateId) {
+      setEditingUpdateId(null);
+      setNewUpdate({
         title: "",
-        description: "",
-        date: new Date().toISOString().split('T')[0],
-        time: "18:00",
-        location: ""
+        content: "",
+        date: new Date().toISOString().split('T')[0]
       });
     }
   };
 
   return (
-    <AdminLayout activeNavItem="Events">
+    <AdminLayout activeNavItem="Updates">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
@@ -233,7 +217,7 @@ export default function EventsComponent() {
               
               <div className="mt-4">
                 <p className="text-gray-600">
-                  Are you sure you want to delete this event?
+                  Are you sure you want to delete this update?
                 </p>
                 {itemToDelete.title && (
                   <p className="mt-2 font-medium text-gray-900">
@@ -274,89 +258,60 @@ export default function EventsComponent() {
           </div>
         )}
 
-        {/* Create/Edit Event Modal */}
-        {showEventModal && (
+        {/* Create/Edit Update Modal */}
+        {showUpdateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 transform transition-all">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  {editingEventId ? 'Edit Event' : 'Create New Event'}
+                  {editingUpdateId ? 'Edit Update' : 'Create New Update'}
                 </h3>
                 <button 
-                  onClick={closeEventModal}
+                  onClick={closeUpdateModal}
                   className="text-gray-400 hover:text-gray-500 transition-colors"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
               
-              <form onSubmit={editingEventId ? handleSaveEvent : handleCreateEvent}>
+              <form onSubmit={editingUpdateId ? handleSaveEdit : handleCreateUpdate}>
                 <div className="space-y-6">
                   <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                     <input
                       type="text"
                       id="title"
                       name="title"
-                      value={newEvent.title}
-                      onChange={handleEventInputChange}
+                      value={newUpdate.title}
+                      onChange={handleUpdateInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                      placeholder="Event name"
+                      placeholder="What's new?"
                       required
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                      <input
-                        type="date"
-                        id="date"
-                        name="date"
-                        value={newEvent.date}
-                        onChange={handleEventInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                      <input
-                        type="time"
-                        id="time"
-                        name="time"
-                        value={newEvent.time}
-                        onChange={handleEventInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
                   <div>
-                    <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                     <input
-                      type="text"
-                      id="location"
-                      name="location"
-                      value={newEvent.location}
-                      onChange={handleEventInputChange}
+                      type="date"
+                      id="date"
+                      name="date"
+                      value={newUpdate.date}
+                      onChange={handleUpdateInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                      placeholder="Where is the event?"
-                      required
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">Content</label>
                     <textarea
-                      id="description"
-                      name="description"
-                      rows="5"
-                      value={newEvent.description}
-                      onChange={handleEventInputChange}
+                      id="content"
+                      name="content"
+                      rows="6"
+                      value={newUpdate.content}
+                      onChange={handleUpdateInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                      placeholder="Describe the event details..."
+                      placeholder="Write your update here..."
                       required
                     ></textarea>
                   </div>
@@ -364,7 +319,7 @@ export default function EventsComponent() {
                   <div className="flex justify-end space-x-3 pt-2">
                     <button
                       type="button"
-                      onClick={handleCancelEvent}
+                      onClick={handleCancelEdit}
                       className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                     >
                       Cancel
@@ -382,7 +337,7 @@ export default function EventsComponent() {
                       ) : (
                         <Send className="w-4 h-4 mr-2" />
                       )}
-                      {isLoading ? (editingEventId ? 'Saving...' : 'Creating...') : (editingEventId ? 'Save Changes' : 'Create Event')}
+                      {isLoading ? (editingUpdateId ? 'Saving...' : 'Publishing...') : (editingUpdateId ? 'Save Changes' : 'Publish Update')}
                     </button>
                   </div>
                 </div>
@@ -393,15 +348,15 @@ export default function EventsComponent() {
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <Calendar className="w-6 h-6 text-indigo-600 mr-2" />
-            <h1 className="text-2xl font-bold text-gray-900">Events</h1>
+            <Bell className="w-6 h-6 text-indigo-600 mr-2" />
+            <h1 className="text-2xl font-bold text-gray-900">Updates</h1>
           </div>
           <button
-            onClick={openEventModal}
+            onClick={openUpdateModal}
             className="px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-md flex items-center"
           >
             <PlusCircle className="w-5 h-5 mr-2" />
-            New Event
+            New Update
           </button>
         </div>
 
@@ -423,7 +378,7 @@ export default function EventsComponent() {
           </div>
         )}
 
-        {isLoading && events.length === 0 && (
+        {isLoading && updates.length === 0 && (
           <div className="flex justify-center items-center py-20">
             <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -432,52 +387,52 @@ export default function EventsComponent() {
           </div>
         )}
           
-        {/* List of Existing Events */}
+        {/* List of Existing Updates */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">Upcoming Events</h2>
-                <p className="text-sm text-gray-500 mt-1">{events.length} events scheduled</p>
+                <h2 className="text-xl font-semibold text-gray-800">Published Updates</h2>
+                <p className="text-sm text-gray-500 mt-1">{updates.length} updates published</p>
               </div>
             </div>
           </div>
           
           <div className="divide-y divide-gray-100">
-            {events.length === 0 && !isLoading ? (
+            {updates.length === 0 && !isLoading ? (
               <div className="p-12 text-center">
                 <div className="mx-auto w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-                  <Calendar className="w-8 h-8 text-indigo-500" />
+                  <Bell className="w-8 h-8 text-indigo-500" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
-                <p className="text-gray-500 mb-6">Schedule upcoming events and activities</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No updates yet</h3>
+                <p className="text-gray-500 mb-6">Share news and announcements with your users</p>
                 <button
-                  onClick={openEventModal}
+                  onClick={openUpdateModal}
                   className="px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm flex items-center mx-auto"
                 >
                   <PlusCircle className="w-5 h-5 mr-2" />
-                  Create Your First Event
+                  Create Your First Update
                 </button>
               </div>
             ) : (
-              events.map((event) => (
-                <div key={event.id} className="p-6 hover:bg-gray-50 transition-colors">
+              updates.map((update) => (
+                <div key={update.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{update.title}</h3>
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => handleEditEvent(event.id)}
+                            onClick={() => handleEditUpdate(update.id)}
                             className="p-1 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Edit event"
+                            title="Edit update"
                           >
                             <Edit2 className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => confirmDelete(event.id, 'event', event.title)}
+                            onClick={() => confirmDelete(update.id, 'update', update.title)}
                             className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete event"
+                            title="Delete update"
                           >
                             <Trash2 className="h-5 w-5" />
                           </button>
@@ -485,15 +440,12 @@ export default function EventsComponent() {
                       </div>
                       <p className="text-sm text-gray-500 mt-1 flex items-center">
                         <Calendar className="w-4 h-4 mr-1.5" />
-                        {formatDate(event.date)} • {formatTime(event.time)}
-                        {event.location && (
-                          <span className="ml-3 flex items-center">
-                            <MapPin className="w-4 h-4 mr-1.5" />
-                            {event.location}
-                          </span>
+                        {formatDate(update.date)}
+                        {update.author && (
+                          <span className="ml-3">Posted by: {update.author}</span>
                         )}
                       </p>
-                      <p className="text-gray-700 mt-3 whitespace-pre-line">{event.description}</p>
+                      <p className="text-gray-700 mt-3 whitespace-pre-line">{update.content}</p>
                     </div>
                   </div>
                 </div>

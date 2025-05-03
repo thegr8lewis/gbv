@@ -2,6 +2,13 @@ from rest_framework import serializers
 from .models import IncidentReport
 from django.conf import settings
 from .models import SupportMessage, Update, Event
+from .models import ContactMessage
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ['id', 'title', 'name', 'email', 'message', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 class EventSerializer(serializers.ModelSerializer):
     created_by = serializers.StringRelatedField(read_only=True)

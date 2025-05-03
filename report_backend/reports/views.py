@@ -18,6 +18,76 @@ from django.utils import timezone
 from .serializers import SupportMessageSerializer, UpdateSerializer
 from .models import SupportMessage, Update, Event
 from .serializers import SupportMessageSerializer, UpdateSerializer, EventSerializer
+from rest_framework.decorators import api_view
+from django.core.mail import send_mail
+from django.conf import settings
+
+from .models import ContactMessage
+from .serializers import ContactMessageSerializer
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.mail import send_mail
+from django.conf import settings
+from rest_framework.authentication import TokenAuthentication
+from rest_framework import generics
+from .models import SupportMessage
+from .serializers import SupportMessageSerializer
+
+
+class ContactMessageListView(ListAPIView,):
+    queryset = ContactMessage.objects.all().order_by('-created_at')
+    serializer_class = ContactMessageSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+@api_view(['POST'])
+def contact_message(request):
+    """
+    Handle contact form submissions
+    """
+    serializer = ContactMessageSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        # Save the message to the database
+        message = serializer.save()
+        
+        # Send notification email to administrators
+        try:
+            subject = f"New Contact Form Submission: {message.title}"
+            email_body = f"""
+A new message has been submitted through the Safe Space contact form:
+
+Name: {message.name}
+Email: {message.email}
+Subject: {message.title}
+
+Message:
+{message.message}
+
+Please review this message in the admin dashboard.
+            """
+            
+            admin_emails = getattr(settings, 'ADMIN_EMAILS', [settings.DEFAULT_FROM_EMAIL])
+            
+            send_mail(
+                subject=subject,
+                message=email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=admin_emails,
+                fail_silently=False,
+            )
+        except Exception as e:
+            # Log the error but don't prevent success response to user
+            print(f"Email notification failed: {str(e)}")
+        
+        return Response(
+            {"message": "Thank you for contacting Safe Space. Your message has been received and will be reviewed."},
+            status=status.HTTP_201_CREATED
+        )
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 import requests
@@ -134,11 +204,12 @@ class SupportMessageListView(generics.ListAPIView):
     serializer_class = SupportMessageSerializer
     queryset = SupportMessage.objects.all().order_by('-created_at')
 
-class SupportMessageDetailView(generics.RetrieveUpdateAPIView):
+class SupportMessageDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SupportMessageSerializer
     queryset = SupportMessage.objects.all()
     lookup_field = 'id'
+
 
 class UpdateListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]

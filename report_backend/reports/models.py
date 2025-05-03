@@ -2,6 +2,24 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.contrib.auth import get_user_model
 
+from django.utils import timezone
+
+class ContactMessage(models.Model):
+    title = models.CharField(max_length=200)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    message = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+    is_read = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.name}: {self.title}"
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Contact Message"
+        verbose_name_plural = "Contact Messages"
+
 User = get_user_model()
 
 class Event(models.Model):

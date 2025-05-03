@@ -1,5 +1,6 @@
 // About.jsx
 import { Shield, Info, BookOpen, Scale, Heart, FileText, Award, ExternalLink } from 'lucide-react';
+import ContactSection from './ContactSection'; // Import the contact section component
 
 export default function InformationScreen() {
   return (
@@ -29,6 +30,9 @@ export default function InformationScreen() {
           </p>
         </div>
       </div>
+
+      {/* Contact Section - Added between Mission and What is SGBV sections */}
+      <ContactSection />
 
       {/* What is SGBV Section */}
       <div className="bg-white rounded-xl p-6 shadow-md mb-8 border border-gray-100">
