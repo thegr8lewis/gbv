@@ -7,6 +7,7 @@ import Update from "../pages/User/Updates";
 import GBVApp from "../pages/User/SGBVApp";
 import Layout from '../pages/User/Layout';
 import Response from "../pages/User/ReportResponse";
+import Instruction from "../pages/User/Instruction";
 
 const UserRoutes = () => {
   return (
@@ -20,6 +21,7 @@ const UserRoutes = () => {
         <Route path="/about" element={<About />} />
         <Route path="/updates" element={<Update />} />
         <Route path="/report-response" element={<Response />} />
+        <Route path="/instructions" element={<Instruction />} />
       </Routes>
     </Layout>
 

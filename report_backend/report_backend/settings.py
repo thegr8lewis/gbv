@@ -7,6 +7,10 @@ env = environ.Env()
 environ.Env.read_env()
 from dotenv import load_dotenv
 
+import os
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
 load_dotenv()  # Load environment variables from .env
 
 

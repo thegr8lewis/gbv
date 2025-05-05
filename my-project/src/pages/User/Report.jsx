@@ -1,8 +1,18 @@
 import { Shield, Upload } from 'lucide-react';
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import ReportResponse from '/src/pages/user/ReportResponse';
+
+// Create lazy-loaded components with error boundaries
+const InstructionsComponent = lazy(() => import('/src/pages/user/Instruction')
+  .catch(() => ({ 
+    default: () => <div className="text-red-500 p-4">Instructions component failed to load</div> 
+  })));
+
+const ReportResponse = lazy(() => import('/src/pages/user/ReportResponse')
+  .catch(() => ({ 
+    default: () => <div className="text-red-500 p-4">Report response component failed to load</div> 
+  })));
 
 const MySwal = withReactContent(Swal);
 
@@ -13,7 +23,7 @@ export default function ReportForm() {
   const [submittedReport, setSubmittedReport] = useState(null);
   
   const initialFormData = {
-    category: '',
+    category: localStorage.getItem('lastReportCategory') || '',
     description: '',
     gender: '',
     location: '',
@@ -41,18 +51,20 @@ export default function ReportForm() {
       ...prev,
       [field]: value
     }));
+
+    if (field === 'category') {
+      localStorage.setItem('lastReportCategory', value);
+    }
   };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
         setSubmitError('File size must be less than 10MB');
         return;
       }
       
-      // Validate file type
       const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
       if (!validTypes.includes(file.type)) {
         setSubmitError('Only JPG, PNG, or PDF files are allowed');
@@ -71,10 +83,8 @@ export default function ReportForm() {
     try {
       const formDataToSend = new FormData();
       
-      // Append all form data to FormData object
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
-          // Map frontend keys to backend keys
           let backendKey = key;
           if (key === 'perpetratorDetails') backendKey = 'perpetrator_details';
           if (key === 'anonymous') backendKey = 'is_anonymous';
@@ -97,7 +107,7 @@ export default function ReportForm() {
 
       const responseData = await response.json();
       setSubmittedReport(responseData);
-      setStep(3); // Move to success step
+      setStep(3);
     } catch (error) {
       console.error('Submission error:', error);
       setSubmitError(error.message || 'An error occurred while submitting the report');
@@ -107,15 +117,12 @@ export default function ReportForm() {
   };
 
   const handleContinue = () => {
-    // Step 1 just goes to Step 2
     if (step === 1) {
       setStep(2);
       return;
     }
   
-    // Step 2: validate before submitting
     if (step === 2) {
-      // Simple validation
       if (!formData.category || !formData.description || (!formData.anonymous && (!formData.contactPhone && !formData.contactEmail))) {
         setSubmitError('Please fill in all required fields or choose to remain anonymous.');
         MySwal.fire({
@@ -369,7 +376,17 @@ export default function ReportForm() {
               </p>
             </div>
             
-            {submittedReport && <ReportResponse reportData={submittedReport} />}
+            {formData.category && (
+              <Suspense fallback={<div>Loading instructions...</div>}>
+                <InstructionsComponent category={formData.category} />
+              </Suspense>
+            )}
+            
+            <div className="mt-4">
+              <Suspense fallback={<div>Loading response...</div>}>
+                <ReportResponse reportId={submittedReport?.id} />
+              </Suspense>
+            </div>
           
             <div className="flex justify-center pt-3 md:pt-4">
               <button

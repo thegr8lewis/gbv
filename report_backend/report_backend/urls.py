@@ -22,6 +22,8 @@ from reports.views import (
     PublicEventListView,
     nearest_services,
     ContactMessageListView,
+    ContactMessageDetailView,
+    fetch_instructions,
 )
 
 urlpatterns = [
@@ -55,6 +57,9 @@ urlpatterns = [
     path('api/nearest-services/', nearest_services, name='nearest-services'),
     path('api/contact/', views.contact_message, name='contact_message'),
     path('api/contact-messages/', ContactMessageListView.as_view(), name='contact-messages-list'),
+    path('api/contact-messages/<int:id>/', ContactMessageDetailView.as_view(), name='contact-message-detail'),
+
+    path('api/instructions', fetch_instructions),
 
 ]
 
