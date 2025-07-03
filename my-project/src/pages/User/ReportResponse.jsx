@@ -916,7 +916,9 @@ const ReportResponse = () => {
       {loading ? renderLoadingState() : (
         <div>
           {error ? renderLocationError() : (
-            <>
+            <>  <div className="map-container relative rounded-xl overflow-hidden " style={{ zIndex: 1 }}>
+
+            
               {/* Map container */}
               <div className="h-96 relative rounded-xl overflow-hidden border border-gray-300 shadow-md mb-6">
                 {userLocation && (
@@ -1089,6 +1091,7 @@ const ReportResponse = () => {
                 Nearest Emergency Services
               </h2>
               {renderServiceCards()}
+              </div>
               
             </>
           )}
