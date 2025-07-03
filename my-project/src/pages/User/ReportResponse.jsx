@@ -1090,16 +1090,6 @@ const ReportResponse = () => {
               </h2>
               {renderServiceCards()}
               
-              {/* Refresh button */}
-              <div className="mt-8 text-center">
-                <button
-                  onClick={requestLocation}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto"
-                >
-                  <LocateFixed className="w-5 h-5" />
-                  Refresh Location
-                </button>
-              </div>
             </>
           )}
         </div>
