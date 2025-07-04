@@ -21,5 +21,13 @@ https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
 import os
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'report_backend.settings')
+# Set the correct settings module based on environment
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    # Production/Render environment
+    settings_module = 'report_backend.report_backend.settings'
+else:
+    # Local development
+    settings_module = 'report_backend.report_backend.settings'
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
 application = get_asgi_application()

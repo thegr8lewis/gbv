@@ -1,30 +1,9 @@
-# services:
-#   - type: web
-#     name: gbv-backend
-#     env: python
-#     buildCommand: "cd report_backend && pip install -r ../requirements.txt"
-#     startCommand: "cd report_backend && gunicorn report_backend.wsgi:application"
-#     envVars:
-#       - key: DJANGO_SETTINGS_MODULE
-#         value: report_backend.settings
-#       - key: SECRET_KEY
-#         value: <your-secret-key>
-#       - key: DATABASE_URL
-#         fromDatabase:
-#           name: gbv3-db
-#           property: connectionString
-
-# databases:
-#   - name: gbv3-db
-#     plan: free
-
 services:
   - type: web
     name: gbv-backend
     env: python
-    rootDirectory: report_backend
-    buildCommand: "../build.sh"
-    startCommand: "gunicorn report_backend.wsgi:application"
+    buildCommand: "cd report_backend && pip install -r ../requirements.txt"
+    startCommand: "cd report_backend && gunicorn report_backend.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: report_backend.settings
@@ -34,6 +13,28 @@ services:
         fromDatabase:
           name: gbv3-db
           property: connectionString
+
+databases:
+  - name: gbv3-db
+    plan: free
+
+services:
+  - type: web
+    name: gbv-backend
+    env: python
+    buildCommand: "cd report_backend && pip install -r ../requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "cd report_backend && gunicorn report_backend.gunicorn report_backend.asgi:application -k uvicorn.workers.UvicornWorker"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: report_backend.report_backend.settings
+      - key: SECRET_KEY
+        value: <your-secret-key>
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gbv3-db
+          property: connectionString
+      - key: RENDER_EXTERNAL_HOSTNAME
+        value: "true"
 
 databases:
   - name: gbv3-db

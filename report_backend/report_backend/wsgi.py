@@ -23,6 +23,14 @@ https://docs.djangoproject.com/en/5.1/howto/deployment/wsgi/
 import os
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'report_backend.settings')
+# Set the correct settings module based on environment
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    # Production/Render environment
+    settings_module = 'report_backend.report_backend.settings'
+else:
+    # Local development
+    settings_module = 'report_backend.report_backend.settings'
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
 application = get_wsgi_application()
 

@@ -35,9 +35,18 @@
 import os
 import sys
 
+
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'report_backend.settings')
+    # Set the correct settings module based on environment
+    if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+        # Production/Render environment
+        settings_module = 'report_backend.report_backend.settings'
+    else:
+        # Local development
+        settings_module = 'report_backend.report_backend.settings'
+
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
 
     try:
         from django.core.management import execute_from_command_line
@@ -48,6 +57,7 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
+
 
 if __name__ == '__main__':
     main()
