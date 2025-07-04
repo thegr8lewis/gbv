@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 import environ
+import dj_database_url
 
 env = environ.Env()
 environ.Env.read_env()
@@ -114,20 +115,26 @@ WSGI_APPLICATION = 'report_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',  # Changed from mysql
+#         'NAME': os.getenv('DB_NAME'),
+#         'USER': os.getenv('DB_USER'),
+#         'PASSWORD': os.getenv('DB_PASSWORD'),
+#         'HOST': os.getenv('DB_HOST'),
+#         'PORT': os.getenv('DB_PORT', '5432'),  # Changed default from 3306 to 5432
+#         'OPTIONS': {
+#             # PostgreSQL specific options
+#             'client_encoding': 'UTF8',
+#             'connect_timeout': 5,
+#         }
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',  # Changed from mysql
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT', '5432'),  # Changed default from 3306 to 5432
-        'OPTIONS': {
-            # PostgreSQL specific options
-            'client_encoding': 'UTF8',
-            'connect_timeout': 5,
-        }
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get("DATABASE_URL")
+    )
 }
 
 # Password validation
