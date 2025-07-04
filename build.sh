@@ -6,17 +6,11 @@
 
 
 #!/usr/bin/env bash
-# set -o errexit
+set -o errexit
 
-# # Move into the Django backend folder
-# cd report_backend
+# Move into the Django backend folder
+cd report_backend
 
-# pip install -r ../requirements.txt
-# python manage.py collectstatic --noinput
-# python manage.py migrate
-
-
-#!/bin/bash
 pip install -r ../requirements.txt
 python manage.py collectstatic --noinput
 python manage.py migrate
