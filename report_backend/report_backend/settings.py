@@ -34,9 +34,7 @@ DEBUG = True
 # ]
 
 
-ALLOWED_HOSTS = [
-    'http://localhost:5173',
-]
+ALLOWED_HOSTS = []
 
 
 # Application definition
