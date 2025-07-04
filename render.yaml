@@ -22,8 +22,9 @@ services:
   - type: web
     name: gbv-backend
     env: python
-    buildCommand: "./build.sh"
-    startCommand: "cd report_backend && gunicorn report_backend.wsgi:application"
+    rootDirectory: report_backend
+    buildCommand: "../build.sh"
+    startCommand: "gunicorn report_backend.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: report_backend.settings
@@ -33,8 +34,6 @@ services:
         fromDatabase:
           name: gbv3-db
           property: connectionString
-      - key: PYTHONPATH
-        value: /opt/render/project/src/report_backend
 
 databases:
   - name: gbv3-db
