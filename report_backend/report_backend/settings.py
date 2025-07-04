@@ -29,12 +29,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'safespacekenya.onrender.com',
-    # 'localhost',
-    # '127.0.0.1',
+    'localhost',
+    '127.0.0.1',
 ]
 
-
-ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -74,7 +72,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-# CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
