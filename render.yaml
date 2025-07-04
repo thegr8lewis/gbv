@@ -24,10 +24,10 @@ services:
     name: gbv-backend
     env: python
     buildCommand: "cd report_backend && pip install -r ../requirements.txt"
-    startCommand: "cd report_backend && gunicorn report_backend.wsgi:application"
+    startCommand: "cd report_backend && PYTHONPATH=. gunicorn report_backend.asgi:application -k uvicorn.workers.UvicornWorker"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: report_backend.settings    # ✅ FIXED
+        value: report_backend.settings
       - key: SECRET_KEY
         value: your-secret-key
       - key: DATABASE_URL
