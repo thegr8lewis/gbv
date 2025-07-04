@@ -23,8 +23,9 @@ services:
   - type: web
     name: gbv-backend
     env: python
-    buildCommand: "cd report_backend && pip install -r ../requirements.txt"
-    startCommand: "cd report_backend && PYTHONPATH=. gunicorn report_backend.asgi:application -k uvicorn.workers.UvicornWorker"
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn report_backend.asgi:application -k uvicorn.workers.UvicornWorker"
+    workingDirectory: "./report_backend" 
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: report_backend.settings
