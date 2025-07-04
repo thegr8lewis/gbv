@@ -3,12 +3,12 @@ import { AlertTriangle, Phone, Mail, ExternalLink, Shield } from 'lucide-react';
 
 export default function EmergencyContacts() {
   const contacts = [
-    { name: "Security Office", number: "0725 471487", urgent: true },
-    { name: "Director of Students' Affairs", number: "020 8704470", urgent: false },
+    // { name: "Security Office", number: "0725 471487", urgent: true },
+    // { name: "Director of Students' Affairs", number: "020 8704470", urgent: false },
     { name: "Private Advisor for Sexual Assault", number: "0798 416091", urgent: true },
     { name: "Health Unit (24/7)", number: "0712 345678", urgent: true },
     { name: "Fire Emergency", number: "999", urgent: true },
-    { name: "Accommodation Office", number: "0723 456789", urgent: false },
+    // { name: "Accommodation Office", number: "0723 456789", urgent: false },
     { name: "National GBV Hotline", number: "1195", urgent: true },
     { name: "Police Emergency", number: "999 / 112", urgent: true }
   ];
