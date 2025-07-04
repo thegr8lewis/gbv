@@ -27,7 +27,7 @@ services:
     startCommand: "cd report_backend && gunicorn report_backend.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: report_backend.report_backend.settings
+        value: report_backend.settings    # ✅ FIXED
       - key: SECRET_KEY
         value: your-secret-key
       - key: DATABASE_URL

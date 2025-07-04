@@ -12,7 +12,7 @@ def main():
     # Ensure the outer folder is on the Python path
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-    settings_module = 'report_backend.report_backend.deployment_settings' if os.environ.get('RENDER_EXTERNAL_HOSTNAME') else 'report_backend.report_backend.settings'
+    settings_module = 'report_backend.settings' if os.environ.get('RENDER_EXTERNAL_HOSTNAME') else 'report_backend.report_backend.settings'
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
 
     try:
