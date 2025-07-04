@@ -35,7 +35,7 @@ services:
       - key: PYTHONPATH
         value: /opt/render/project/src:/opt/render/project/src/report_backend
       - key: SECRET_KEY
-        value: <your-secret-key>
+        value: "8e639164386f17edf39a7eb045676377"
       - key: DISABLE_COLLECTSTATIC
         value: "1"
       - key: DATABASE_URL
