@@ -22,10 +22,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS_ALLOWED_ORIGINS = [
-#     'http://localhost:5173',
-# ]
-ALLOWED_HOSTS = [ '*' ]
+CORS_ALLOWED_ORIGINS = [
+    'http://safespacekenya.onrender.com' 
+]
+
+# ALLOWED_HOSTS = [ 'http://safespacekenya.onrender.com' ]
 
 STORAGES = {
     'default': {
