@@ -8,12 +8,9 @@
 #!/usr/bin/env bash
 set -o errexit
 
-# Move to the directory containing this script (report_backend/)
-cd "$(dirname "$0")"
+# Move into the Django backend folder
+cd report_backend
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Run Django commands using the correct path
+pip install -r ../requirements.txt
 python manage.py collectstatic --noinput
 python manage.py migrate
