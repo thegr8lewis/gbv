@@ -72,7 +72,7 @@ export default function HomeScreen({ isLoggedIn }) {
       </div>
 
       {/* Trust Indicators */}
-      <div className="bg-white rounded-xl p-6 shadow-md mb-8 border border-gray-100">
+      <div className="bg-white rounded-xl p-6 ">
         <div className="flex items-center mb-5">
           <div className="bg-green-50 p-3 rounded-full">
             <CheckCircle size={22} className="text-green-700" />
@@ -116,7 +116,7 @@ export default function HomeScreen({ isLoggedIn }) {
       {/* Quick Access Cards with Enhanced Styling */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Emergency Support */}
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition duration-300">
+        <div className="bg-white rounded-xl p-6  hover:shadow-lg transition duration-300">
           <div className="flex items-center mb-4">
             <div className="bg-red-50 p-3 rounded-full">
               <AlertTriangle size={22} className="text-red-500" />
@@ -142,7 +142,7 @@ export default function HomeScreen({ isLoggedIn }) {
         </div>
 
         {/* Resources & Information */}
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition duration-300">
+        <div className="bg-white rounded-xl p-6 hover:shadow-lg transition duration-300">
           <div className="flex items-center mb-4">
             <div className="bg-blue-50 p-3 rounded-full">
               <Info size={22} className="text-blue-700" />

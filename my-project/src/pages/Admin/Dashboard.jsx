@@ -12,9 +12,28 @@ import {
   Download,
   RefreshCw
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        navigate('/login');
+      } else {
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  // Rest of your existing state
   const [reports, setReports] = useState([]);
   const [recentReports, setRecentReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,10 +55,33 @@ export default function Dashboard() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/reports/list/');
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('http://localhost:8000/api/reports/list/', {
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.status === 401) {
+        // Token is invalid or expired
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch reports');
       }
+      
       const data = await response.json();
       setReports(data);
       processReportsData(data);
@@ -202,6 +244,16 @@ export default function Dashboard() {
     { text: 'Case status updated', time: '42 minutes ago', type: 'update' },
     { text: 'New message from support', time: '1 hour ago', type: 'message' }
   ];
+
+    if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AdminLayout activeNavItem="Dashboard">

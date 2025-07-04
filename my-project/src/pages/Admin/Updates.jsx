@@ -1,9 +1,26 @@
-// pages/admin/updates.jsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Bell, Edit2, Trash2, X, Send, PlusCircle } from 'lucide-react';
 import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function Updates() {
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        navigate('/login');
+      } else {
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
   // State management
   const [updates, setUpdates] = useState([]);
   const [newUpdate, setNewUpdate] = useState({
@@ -20,18 +37,36 @@ export default function Updates() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState({ id: null, type: null, title: null });
 
-  // Get auth token from localStorage
+  // Get auth token with validation
   const getAuthToken = () => {
-    return localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      navigate('/login');
+      return null;
+    }
+    return token;
   };
 
-  // Fetch data function
+  // Fetch data function with auth check
   const fetchUpdates = async () => {
     setIsLoading(true);
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch('http://localhost:8000/api/updates/', {
-        headers: { 'Authorization': `Token ${getAuthToken()}` }
+        headers: { 'Authorization': `Token ${token}` }
       });
+
+      if (response.status === 401) {
+        // Token is invalid or expired
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
+
       if (response.ok) {
         setUpdates(await response.json());
       } else {
@@ -45,8 +80,10 @@ export default function Updates() {
   };
 
   useEffect(() => {
-    fetchUpdates();
-  }, []);
+    if (authChecked) {
+      fetchUpdates();
+    }
+  }, [authChecked]);
 
   // Helper function
   const formatDate = (dateString) => {
@@ -54,7 +91,7 @@ export default function Updates() {
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
-  // Delete confirmation handlers
+  // Delete confirmation handlers with auth check
   const confirmDelete = (id, type, title) => {
     setItemToDelete({ id, type, title });
     setShowDeleteModal(true);
@@ -68,10 +105,21 @@ export default function Updates() {
   const executeDelete = async () => {
     setIsLoading(true);
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch(`http://localhost:8000/api/updates/${itemToDelete.id}/`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Token ${getAuthToken()}` }
+        headers: { 'Authorization': `Token ${token}` }
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
       
       if (response.ok) {
         setUpdates(updates.filter(update => update.id !== itemToDelete.id));
@@ -88,7 +136,7 @@ export default function Updates() {
     }
   };
 
-  // Update handlers
+  // Update handlers with auth checks
   const handleUpdateInputChange = (e) => {
     const { name, value } = e.target;
     if (editingUpdateId) {
@@ -104,14 +152,25 @@ export default function Updates() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch('http://localhost:8000/api/updates/', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Token ${getAuthToken()}`
+          'Authorization': `Token ${token}`
         },
         body: JSON.stringify(newUpdate)
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
       
       if (response.ok) {
         const createdUpdate = await response.json();
@@ -148,14 +207,25 @@ export default function Updates() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch(`http://localhost:8000/api/updates/${editingUpdateId}/`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Token ${getAuthToken()}`
+          'Authorization': `Token ${token}`
         },
         body: JSON.stringify(newUpdate)
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
       
       if (response.ok) {
         setStatusMessage({ type: 'success', message: 'Update saved successfully!' });
@@ -197,6 +267,17 @@ export default function Updates() {
       });
     }
   };
+
+  // Only render the component if authentication is confirmed
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>Loading updates...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AdminLayout activeNavItem="Updates">

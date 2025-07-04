@@ -7,8 +7,7 @@ function App() {
   return (
     <Router>
       <Routes>
-
-
+        
         {/* Admin Dashboard Routes */}
         <Route path="/admin/*" element={<AdminRoutes />} />
 

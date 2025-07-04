@@ -1,9 +1,36 @@
-// pages/admin/support.jsx
 import { useState, useEffect } from 'react';
-import { MessageSquare, Send, X, Trash2, Mail, MailOpen, Clock, Search, PlusCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  MessageSquare, 
+  Send, 
+  X, 
+  Trash2, 
+  Mail, 
+  MailOpen, 
+  Clock, 
+  Search, 
+  PlusCircle 
+} from 'lucide-react';
 import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function Support() {
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        navigate('/login');
+      } else {
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
   // State management
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -18,18 +45,36 @@ export default function Support() {
   const [replyTo, setReplyTo] = useState({ id: null, name: '', email: '', subject: '' });
   const [replyMessage, setReplyMessage] = useState('');
 
-  // Get auth token from localStorage
+  // Get auth token with validation
   const getAuthToken = () => {
-    return localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      navigate('/login');
+      return null;
+    }
+    return token;
   };
 
   // Fetch data function
   const fetchMessages = async () => {
     setIsLoading(true);
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch('http://localhost:8000/api/contact-messages/', {
-        headers: { 'Authorization': `Token ${getAuthToken()}` }
+        headers: { 'Authorization': `Token ${token}` }
       });
+
+      if (response.status === 401) {
+        // Token is invalid or expired
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
+
       if (response.ok) {
         setMessages(await response.json());
       } else {
@@ -43,8 +88,10 @@ export default function Support() {
   };
 
   useEffect(() => {
-    fetchMessages();
-  }, []);
+    if (authChecked) {
+      fetchMessages();
+    }
+  }, [authChecked]);
 
   // Helper function
   const formatDate = (dateString) => {
@@ -66,10 +113,21 @@ export default function Support() {
   const executeDelete = async () => {
     setIsLoading(true);
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch(`http://localhost:8000/api/contact-messages/${itemToDelete.id}/`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Token ${getAuthToken()}` }
+        headers: { 'Authorization': `Token ${token}` }
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
       
       if (response.ok) {
         setMessages(messages.filter(msg => msg.id !== itemToDelete.id));
@@ -86,7 +144,7 @@ export default function Support() {
     }
   };
 
-  // Reply handlers
+  // Reply handlers with auth checks
   const openReplyModal = (message) => {
     setReplyTo({
       id: message.id,
@@ -113,11 +171,14 @@ export default function Support() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch(`http://localhost:8000/api/send-email/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Token ${getAuthToken()}`
+          'Authorization': `Token ${token}`
         },
         body: JSON.stringify({ 
           message_id: replyTo.id,
@@ -126,6 +187,14 @@ export default function Support() {
           message: replyMessage
         })
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
       
       if (response.ok) {
         setMessages(messages.map(msg => 
@@ -143,18 +212,29 @@ export default function Support() {
     }
   };
 
-  // Message handlers
+  // Message handlers with auth checks
   const handleMarkAsRead = async (messageId, currentStatus) => {
     const newStatus = currentStatus === 'unread' ? 'read' : 'unread';
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch(`http://localhost:8000/api/support-messages/${messageId}/`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Token ${getAuthToken()}`
+          'Authorization': `Token ${token}`
         },
         body: JSON.stringify({ status: newStatus })
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
       
       if (response.ok) {
         setMessages(messages.map(msg => 
@@ -168,7 +248,7 @@ export default function Support() {
     }
   };
 
-  // Filter and search
+  // Filter and search (unchanged)
   const filteredMessages = messages.filter(message => {
     if (!message) return false;
     
@@ -187,6 +267,17 @@ export default function Support() {
     if (filterStatus === 'all') return matchesSearch;
     return message.status === filterStatus && matchesSearch;
   });
+
+  // Only render the component if authentication is confirmed
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>Loading support messages...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AdminLayout activeNavItem="Support">

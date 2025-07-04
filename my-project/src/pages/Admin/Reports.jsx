@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   RefreshCw, 
@@ -16,6 +17,24 @@ import {
 import AdminLayout from '/src/pages/Admin/AdminLayout.jsx';
 
 export default function Reports() {
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        navigate('/login');
+      } else {
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  // State management
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +49,16 @@ export default function Reports() {
   // Define the media URL base
   const MEDIA_URL = 'http://localhost:8000/media/';
 
+  // Get auth token with validation
+  const getAuthToken = () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      navigate('/login');
+      return null;
+    }
+    return token;
+  };
+
   // Calculate counts for each status
   const reportCounts = {
     all: reports.length,
@@ -41,10 +70,29 @@ export default function Reports() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/reports/list/');
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('http://localhost:8000/api/reports/list/', {
+        headers: { 
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 401) {
+        // Token is invalid or expired
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch reports');
       }
+
       const data = await response.json();
       setReports(data);
       setFilteredReports(data);
@@ -56,8 +104,10 @@ export default function Reports() {
   };
 
   useEffect(() => {
-    fetchReports();
-  }, []);
+    if (authChecked) {
+      fetchReports();
+    }
+  }, [authChecked]);
 
   // Filter reports based on active tab
   useEffect(() => {
@@ -70,6 +120,7 @@ export default function Reports() {
     }
   }, [activeTab, reports]);
 
+  // Helper functions remain the same
   const formatDate = (dateString) => {
     const options = { day: 'numeric', month: 'short', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-US', options);
@@ -107,13 +158,25 @@ export default function Reports() {
 
   const updateReportStatus = async (reportId, newStatus) => {
     try {
+      const token = getAuthToken();
+      if (!token) return;
+
       const response = await fetch(`http://localhost:8000/api/reports/${reportId}/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`
         },
         body: JSON.stringify({ status: newStatus }),
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('is_staff');
+        navigate('/login');
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Failed to update report status');
@@ -153,6 +216,16 @@ export default function Reports() {
     return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
   };
 
+  // Only render the component if authentication is confirmed
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>Loading reports...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <AdminLayout activeNavItem="Reports">
       <div className="max-w-7xl mx-auto">

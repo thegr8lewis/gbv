@@ -1,6 +1,4 @@
 from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from .models import IncidentReport
 from .serializers import IncidentReportSerializer
@@ -13,28 +11,16 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import IncidentReport
 from rest_framework import generics, status
-from .models import SupportMessage, Update
 from django.utils import timezone
 import time
-from .serializers import SupportMessageSerializer, UpdateSerializer
 from .models import SupportMessage, Update, Event
 from .serializers import SupportMessageSerializer, UpdateSerializer, EventSerializer
 from rest_framework.decorators import api_view
 from django.core.mail import send_mail
 from django.conf import settings
-
 from .models import ContactMessage
 from .serializers import ContactMessageSerializer
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from django.core.mail import send_mail
-from django.conf import settings
 from rest_framework.authentication import TokenAuthentication
-from rest_framework import generics
-from .models import SupportMessage
-from .serializers import SupportMessageSerializer
-
 import requests
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -42,16 +28,60 @@ import json
 import os
 from dotenv import load_dotenv
 import uuid
-
-
 load_dotenv()
 
-import time
-import json
-import uuid
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import requests
+from django.contrib.auth import update_session_auth_hash
+from rest_framework.decorators import api_view, permission_classes
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_credentials(request):
+    """
+    Update user's email and/or password
+    """
+    user = request.user
+    current_password = request.data.get('current_password')
+    new_email = request.data.get('new_email')
+    new_password = request.data.get('new_password')
+
+    # Verify current password first
+    if not user.check_password(current_password):
+        return Response(
+            {'detail': 'Current password is incorrect'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Update email if provided
+    if new_email:
+        if User.objects.filter(email=new_email).exclude(pk=user.pk).exists():
+            return Response(
+                {'detail': 'This email is already in use by another account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user.email = new_email
+
+    # Update password if provided
+    if new_password:
+        if len(new_password) < 8:
+            return Response(
+                {'detail': 'Password must be at least 8 characters long'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user.set_password(new_password)
+
+    user.save()
+    
+    # Update session if password changed to prevent logout
+    if new_password:
+        update_session_auth_hash(request, user)
+
+    return Response(
+        {'detail': 'Credentials updated successfully'},
+        status=status.HTTP_200_OK
+    )
 
 @csrf_exempt
 def fetch_instructions(request):

@@ -24,6 +24,7 @@ from reports.views import (
     ContactMessageListView,
     ContactMessageDetailView,
     fetch_instructions,
+    update_credentials,
 )
 
 urlpatterns = [
@@ -60,6 +61,7 @@ urlpatterns = [
     path('api/contact-messages/<int:id>/', ContactMessageDetailView.as_view(), name='contact-message-detail'),
 
     path('api/instructions', fetch_instructions),
+    path('api/update-credentials/', update_credentials, name='update-credentials'),
 
 ]
 
