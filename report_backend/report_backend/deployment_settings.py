@@ -23,7 +23,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'https://safespacekenya.onrender.com' 
+    'https://gbv4.onrender.com' 
 ]
 
 # ALLOWED_HOSTS = [ 'http://safespacekenya.onrender.com' ]

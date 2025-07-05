@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
 import { Map, Loader, AlertTriangle, Navigation, LocateFixed, Shield, Hospital, Phone, ArrowRight, School, Store, Coffee } from 'lucide-react';
+import {  API_BASE_URL } from './apiConfig';
 
 // Cache for storing location data with a longer validity
 const locationCache = {
@@ -444,7 +445,7 @@ const ReportResponse = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/nearest-services?lat=${lat}&lng=${lng}`
+        `${API_BASE_URL}/nearest-services?lat=${lat}&lng=${lng}`
       );
       
       const data = await response.json();

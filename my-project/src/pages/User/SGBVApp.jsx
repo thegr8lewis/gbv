@@ -9,6 +9,7 @@ import InformationScreen from './About.jsx';
 import UpdatesScreen from './Updates.jsx';
 import { submitReport } from './sgbvApi';
 
+
 function SGBVApp() {
   const location = useLocation();
   const [step, setStep] = useState(1);

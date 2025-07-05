@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import {  API_BASE_URL } from './apiConfig';
 
 export default function UpdatesScreen() {
   const [updates, setUpdates] = useState([]);
@@ -7,21 +8,22 @@ export default function UpdatesScreen() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('updates');
   const [calendarModal, setCalendarModal] = useState({ isOpen: false, event: null });
+  
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
         // Fetch updates from your backend API
-        const updatesResponse = await fetch('http://localhost:8000/api/public/updates/');
+        const updatesResponse = await fetch(`${API_BASE_URL}/public/updates/`);
         if (!updatesResponse.ok) {
           throw new Error('Failed to fetch updates');
         }
         const updatesData = await updatesResponse.json();
         setUpdates(updatesData);
 
-        
-        const eventsResponse = await fetch('http://localhost:8000/api/public/events/');
+
+        const eventsResponse = await fetch(`${API_BASE_URL}/public/events/`);
         if (!eventsResponse.ok) {
           throw new Error('Failed to fetch events');
         }

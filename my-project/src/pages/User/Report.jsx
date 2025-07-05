@@ -2,6 +2,7 @@ import { Shield, Upload, ChevronRight, ChevronLeft, Check, Plus, AlertTriangle, 
 import { useState, Suspense, lazy } from 'react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import {  API_BASE_URL } from './apiConfig';
 
 // Create lazy-loaded components with error boundaries
 const InstructionsComponent = lazy(() => import('/src/pages/user/Instruction')
@@ -94,8 +95,8 @@ export default function ReportForm() {
           formDataToSend.append(backendKey, value);
         }
       });
-      
-      const response = await fetch('http://localhost:8000/api/reports/', {
+
+      const response = await fetch(`${API_BASE_URL}/reports/`, {
         method: 'POST',
         body: formDataToSend,
       });

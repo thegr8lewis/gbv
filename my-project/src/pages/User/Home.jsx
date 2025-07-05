@@ -2,6 +2,7 @@
 import { AlertTriangle, Phone, ArrowRight, Info, Bell, Shield, Heart, Users, Lock, CheckCircle, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {  API_BASE_URL } from './apiConfig';
 
 export default function HomeScreen({ isLoggedIn }) {
   const [latestUpdates, setLatestUpdates] = useState([]);
@@ -9,10 +10,11 @@ export default function HomeScreen({ isLoggedIn }) {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+
   useEffect(() => {
     const fetchLatestUpdates = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/public/updates/?ordering=-created_at');
+        const response = await fetch(`${API_BASE_URL}/public/updates/?ordering=-created_at`);
         if (!response.ok) {
           throw new Error('Failed to fetch updates');
         }
