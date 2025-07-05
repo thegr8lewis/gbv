@@ -75,6 +75,7 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+     'https://gbv4.onrender.com' 
 ]
 
 # settings.py
