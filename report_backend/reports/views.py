@@ -33,8 +33,327 @@ load_dotenv()
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import get_user_model
-
 User = get_user_model()
+from rest_framework import generics, permissions
+from .models import Booking
+from .serializers import BookingSerializer, PastBookingSerializer, UpcomingBookingSerializer
+from django.utils import timezone
+from django.db.models import Q
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from .models import Availability
+from .serializers import AvailabilitySerializer, AvailabilityBulkSerializer
+from .serializers import PsychologistProfileSerializer
+from .serializers import PsychologistDetailSerializer
+from .models import PsychologistProfile, PsychologistAvailability
+from rest_framework import generics, permissions
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from datetime import datetime, timedelta
+import pytz
+
+from rest_framework import generics, permissions
+from django.shortcuts import get_object_or_404
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from datetime import datetime
+from .models import PsychologistProfile, PsychologistAvailability, Booking
+from .serializers import (
+    PsychologistProfileSerializer, 
+    PsychologistDetailSerializer, 
+    BookingSerializer
+)
+
+class PsychologistListView(generics.ListAPIView):
+    serializer_class = PsychologistProfileSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return PsychologistProfile.objects.all()
+
+class PsychologistDetailView(generics.RetrieveAPIView):
+    serializer_class = PsychologistDetailSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def get_object(self):
+        psychologist = get_object_or_404(PsychologistProfile, user_id=self.kwargs['user_id'])
+        
+        # Get all availabilities for this psychologist
+        availabilities = PsychologistAvailability.objects.filter(
+            psychologist=psychologist.user
+        ).order_by('start')
+        
+        # Get all bookings for this psychologist to mark which slots are booked
+        now = timezone.now()
+        bookings = Booking.objects.filter(
+            psychologist=psychologist.user,
+            end__gte=now  # Only consider future bookings
+        )
+        
+        # Update availability status based on bookings
+        for availability in availabilities:
+            # Check if this availability slot has been booked
+            is_booked = bookings.filter(
+                start=availability.start,
+                end=availability.end
+            ).exists()
+            
+            if is_booked and availability.status != 'booked':
+                availability.status = 'booked'
+                availability.save()
+            elif not is_booked and availability.status == 'booked':
+                availability.status = 'available'
+                availability.save()
+        
+        return psychologist
+
+from django.core.mail import send_mail
+from django.conf import settings
+
+from rest_framework import generics, permissions
+from django.shortcuts import get_object_or_404
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from datetime import datetime
+from .models import PsychologistProfile, PsychologistAvailability, Booking
+from .serializers import BookingSerializer
+
+
+class CreateBookingView(generics.CreateAPIView):
+    serializer_class = BookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        psychologist_id = self.kwargs.get('user_id')
+        psychologist = get_object_or_404(User, pk=psychologist_id)
+        context['psychologist'] = psychologist
+        return context
+
+    def perform_create(self, serializer):
+        psychologist_id = self.kwargs.get('user_id')
+        psychologist = get_object_or_404(PsychologistProfile, user_id=psychologist_id)
+
+         # First validate the slot is available
+        slot = Availability.objects.filter(
+            psychologist=psychologist.user,
+            start=serializer.validated_data['start'],
+            end=serializer.validated_data['end'],
+            status='available'
+        ).first()
+        
+        if not slot:
+            raise serializers.ValidationError("This time slot is not available for booking")
+
+        # Mark slot as booked before creating the booking
+        slot.status = 'booked'
+        slot.save()
+
+        meet_link = None
+        calendar_event_id = None
+
+        if psychologist.google_auth_token:
+            try:
+                creds = Credentials.from_authorized_user_info(psychologist.google_auth_token)
+                service = build('calendar', 'v3', credentials=creds)
+
+                event = {
+                    'summary': f'Therapy Session with {psychologist.username}',
+                    'description': 'Therapy session booked through SafeSpace',
+                    'start': {
+                        'dateTime': serializer.validated_data['start'].isoformat(),
+                        'timeZone': 'UTC',
+                    },
+                    'end': {
+                        'dateTime': serializer.validated_data['end'].isoformat(),
+                        'timeZone': 'UTC',
+                    },
+                    'conferenceData': {
+                        'createRequest': {
+                            'requestId': f'safespace-{datetime.now().timestamp()}',
+                            'conferenceSolutionKey': {
+                                'type': 'hangoutsMeet'
+                            }
+                        }
+                    },
+                    'attendees': [
+                        {'email': psychologist.user.email},
+                        {'email': self.request.user.email}
+                    ],
+                }
+
+                event = service.events().insert(
+                    calendarId='primary',
+                    body=event,
+                    conferenceDataVersion=1
+                ).execute()
+
+                meet_link = event.get('hangoutLink')
+                calendar_event_id = event.get('id')
+
+            except Exception as e:
+                print(f"Error creating Google Meet: {e}")
+                # Fallback to a generic meet link if Google Calendar fails
+                meet_link = f"https://meet.google.com/new"
+
+    
+        booking = serializer.save(
+            psychologist=psychologist.user,
+            client=self.request.user,
+            client_email=self.request.user.email,
+            meet_link=meet_link,
+            calendar_event_id=calendar_event_id
+        )
+
+        PsychologistAvailability.objects.filter(
+            psychologist=psychologist.user,
+            start=serializer.validated_data['start'],
+            end=serializer.validated_data['end']
+        ).update(status='booked')
+
+        # Get user's display name - check if user has a profile with username
+        user_display_name = self.request.user.get_full_name()
+        if not user_display_name:
+            # Try to get from user profile if you have one
+            user_display_name = getattr(self.request.user, 'username', 'User')
+
+        # Prepare context for email template
+        context = {
+            'user_name': user_display_name,
+            'psychologist_name': psychologist.username,  # Use the display username from profile
+            'booking_date': serializer.validated_data['start'].strftime('%Y-%m-%d'),
+            'booking_time': serializer.validated_data['start'].strftime('%H:%M'),
+            'location': 'Online',
+            'session_type': 'Therapy Session',
+            'meet_link': meet_link or 'https://meet.google.com/new',  # Ensure fallback
+            'current_year': datetime.now().year,
+        }
+
+        subject = 'Your Therapy Session Booking Confirmation'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [self.request.user.email]
+
+        plain_message = f"""
+Dear {context['user_name']},
+
+Your appointment with {context['psychologist_name']} has been successfully booked.
+
+Date: {context['booking_date']}
+Time: {context['booking_time']}
+Google Meet Link: {context['meet_link']}
+
+Thank you,
+SafeSpace Team
+"""
+
+        html_message = render_to_string('emails/booking_confirmation.html', context)
+
+        try:
+            email = EmailMultiAlternatives(subject, plain_message, from_email, recipient_list)
+            email.attach_alternative(html_message, "text/html")
+            email.send()
+            print("Booking confirmation email sent successfully.")
+        except Exception as e:
+            print(f"Failed to send confirmation email: {e}")
+            
+
+
+class AvailabilityListView(generics.ListCreateAPIView):
+    serializer_class = AvailabilitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Availability.objects.filter(psychologist=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(psychologist=self.request.user)
+
+class AvailabilityBulkUpdateView(generics.CreateAPIView):
+    serializer_class = AvailabilityBulkSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        availabilities = serializer.save()
+        return Response({
+            'status': 'success',
+            'message': f'{len(availabilities)} availabilities updated'
+        }, status=status.HTTP_201_CREATED)
+
+class AvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AvailabilitySerializer
+    permission_classes = [AllowAny] 
+
+    def get_queryset(self):
+        return Availability.objects.filter(psychologist=self.request.user)
+
+class BookingListCreateView(generics.ListCreateAPIView):
+    serializer_class = BookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(psychologist=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(psychologist=self.request.user)
+
+class PastBookingsView(generics.ListAPIView):
+    serializer_class = PastBookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        now = timezone.now()
+        return Booking.objects.filter(
+            psychologist=self.request.user,
+            end__lt=now
+        ).order_by('-start')
+
+class UpcomingBookingsView(generics.ListAPIView):
+    serializer_class = UpcomingBookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        now = timezone.now()
+        return Booking.objects.filter(
+            psychologist=self.request.user,
+            start__gte=now
+        ).order_by('start')
+
+class BookingDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = BookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(psychologist=self.request.user)
+
+
+
+from rest_framework import generics, permissions
+from .models import PsychologistProfile
+from .serializers import PsychologistProfileSerializer
+from rest_framework.response import Response
+
+class ProfileDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = PsychologistProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        user = self.request.user
+        profile, created = PsychologistProfile.objects.get_or_create(
+            user=user,
+            defaults={'username': user.username}
+        )
+        return profile
+    
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

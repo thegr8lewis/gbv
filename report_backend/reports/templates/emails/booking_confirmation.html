@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Booking Confirmation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #1f2937;
+      margin: 0;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+
+    .email-wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+
+    .header {
+      background: #ffffff;
+      padding: 40px 32px 32px;
+      text-align: center;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .check-icon {
+      width: 48px;
+      height: 48px;
+      background: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .check-icon::after {
+      content: '✓';
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .header h1 {
+      color: #111827;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 16px;
+      font-weight: 400;
+    }
+
+    .content {
+      padding: 32px;
+    }
+
+    .greeting {
+      font-size: 16px;
+      color: #111827;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    .main-text {
+      color: #4b5563;
+      font-size: 15px;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .appointment-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 24px;
+      margin: 32px 0;
+    }
+
+    .appointment-header {
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+
+    .therapist-name {
+      color: #111827;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .therapist-title {
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .detail-item {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .detail-label {
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .detail-value {
+      color: #111827;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .cta-section {
+      text-align: center;
+      margin: 32px 0;
+    }
+
+    .meet-button {
+      display: inline-block;
+      background: #111827;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+    }
+
+    .meet-button:hover {
+      background: #1f2937;
+    }
+
+    .info-section {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 24px 0;
+    }
+
+    .info-section p {
+      color: #4b5563;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .footer {
+      background: #f9fafb;
+      padding: 24px 32px;
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .footer p {
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .footer .company-name {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 24px 0;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 20px 10px;
+      }
+      
+      .email-wrapper {
+        border-radius: 6px;
+      }
+      
+      .header, .content, .footer {
+        padding: 24px 20px;
+      }
+      
+      .details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .header h1 {
+        font-size: 20px;
+      }
+      
+      .appointment-card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <div class="check-icon"></div>
+      <h1>Booking Confirmed</h1>
+      <p>Your therapy session has been scheduled</p>
+    </div>
+
+    <div class="content">
+      <div class="greeting">
+        Hello ,
+      </div>
+
+      <p class="main-text">
+        Your appointment has been successfully booked and confirmed. We look forward to supporting you in your wellness journey.
+      </p>
+
+      <div class="appointment-card">
+        <div class="appointment-header">
+          <div class="therapist-name">Psychologist Name: {{ psychologist_name }}</div>
+          <div class="therapist-title">Licensed Therapist</div>
+        </div>
+
+        <div class="details-grid">
+          <div class="detail-item">
+            <div class="detail-label">Date</div>
+            <div class="detail-value">{{ booking_date }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Time</div>
+            <div class="detail-value">{{ booking_time }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Location</div>
+            <div class="detail-value">{{ location }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Session Type</div>
+            <div class="detail-value">{{ session_type }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-section">
+        <a href="{{ meet_link }}" class="meet-button">
+          Join Session
+        </a>
+      </div>
+      {{ meet_link }}
+
+      <div class="info-section">
+        <p>Please join the session 5 minutes before your scheduled time. If you need to reschedule or have any questions, please contact us at least 24 hours in advance.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Thank you for choosing <span class="company-name">SafeSpace</span></p>
+      <p>&copy; {{ current_year }} SafeSpace. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

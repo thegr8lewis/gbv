@@ -25,6 +25,17 @@ from reports.views import (
     ContactMessageDetailView,
     fetch_instructions,
     update_credentials,
+    ProfileDetailView,
+    BookingListCreateView,
+    PastBookingsView,
+    UpcomingBookingsView,
+    BookingDetailView
+    , AvailabilityListView,
+    AvailabilityBulkUpdateView,
+    AvailabilityDetailView
+    , PsychologistListView,
+    PsychologistDetailView,
+    CreateBookingView
 )
 
 urlpatterns = [
@@ -63,6 +74,20 @@ urlpatterns = [
     path('api/instructions', fetch_instructions),
     path('api/update-credentials/', update_credentials, name='update-credentials'),
 
+
+
+    path('api/profile/', ProfileDetailView.as_view(), name='profile-detail'),
+    path('api/bookings/', BookingListCreateView.as_view(), name='booking-list'),
+    path('api/bookings/past/', PastBookingsView.as_view(), name='past-bookings'),
+    path('api/bookings/upcoming/', UpcomingBookingsView.as_view(), name='upcoming-bookings'),
+    path('api/bookings/<int:pk>/', BookingDetailView.as_view(), name='booking-detail'),
+    path('api/availabilities/', AvailabilityListView.as_view(), name='availability-list'),
+    path('api/availabilities/bulk/', AvailabilityBulkUpdateView.as_view(), name='availability-bulk-update'),
+    path('api/availabilities/<int:pk>/', AvailabilityDetailView.as_view(), name='availability-detail'),
+    path('api/psychologists/', PsychologistListView.as_view(), name='psychologist-list'),
+
+    path('api/psychologists/<int:user_id>/', PsychologistDetailView.as_view(), name='psychologist-detail'),
+    path('api/psychologists/<int:user_id>/bookings/', CreateBookingView.as_view(), name='create-booking'),
 ]
 
 if settings.DEBUG:

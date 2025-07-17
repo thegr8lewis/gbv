@@ -7,13 +7,22 @@ import dj_database_url
 env = environ.Env()
 environ.Env.read_env()
 from dotenv import load_dotenv
-
 import os
+load_dotenv()  
+import firebase_admin
+from firebase_admin import credentials
+from pathlib import Path
 
-
-load_dotenv()  # Load environment variables from .env
-
-
+# Firebase initialization
+try:
+    cred_path = Path(__file__).resolve().parent / 'config' / 'firebase-service-account.json'
+    if cred_path.exists():
+        cred = credentials.Certificate(str(cred_path))
+        firebase_admin.initialize_app(cred)
+    else:
+        print(f"Warning: Firebase service account file not found at {cred_path}")
+except Exception as e:
+    print(f"Error initializing Firebase: {str(e)}")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -69,12 +78,16 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'reports.authentication.FirebaseAuthentication',
     ],
+        'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
 }
 
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5174',
+    'http://localhost:5173',
      'https://gbv4.onrender.com' 
 ]
 
@@ -120,27 +133,27 @@ WSGI_APPLICATION = 'report_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',  # Changed from mysql
-#         'NAME': os.getenv('DB_NAME'),
-#         'USER': os.getenv('DB_USER'),
-#         'PASSWORD': os.getenv('DB_PASSWORD'),
-#         'HOST': os.getenv('DB_HOST'),
-#         'PORT': os.getenv('DB_PORT', '5432'),  # Changed default from 3306 to 5432
-#         'OPTIONS': {
-#             # PostgreSQL specific options
-#             'client_encoding': 'UTF8',
-#             'connect_timeout': 5,
-#         }
-#     }
-# }
-
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get("DATABASE_URL")
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',  # Changed from mysql
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT', '5432'),  # Changed default from 3306 to 5432
+        'OPTIONS': {
+            # PostgreSQL specific options
+            'client_encoding': 'UTF8',
+            'connect_timeout': 5,
+        }
+    }
 }
+
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=os.environ.get("DATABASE_URL")
+#     )
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -172,6 +185,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+
 
 
 # Static files (CSS, JavaScript, Images)

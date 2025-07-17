@@ -3,6 +3,92 @@ from django.core.validators import FileExtensionValidator
 from django.contrib.auth import get_user_model
 
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+from django.db import models
+from django.contrib.auth.models import User
+
+
+User = get_user_model()
+
+class PsychologistAvailability(models.Model):
+    psychologist = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='availability' 
+    )
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=[
+        ('available', 'Available'),
+        ('booked', 'Booked'),
+        ('unavailable', 'Unavailable')
+    ], default='available')
+    
+    class Meta:
+        verbose_name_plural = "Psychologist Availabilities"
+        ordering = ['start']
+
+# models.py
+class Availability(models.Model):
+    psychologist = models.ForeignKey(User, on_delete=models.CASCADE, related_name='availabilities')
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    STATUS_CHOICES = [
+        ('available', 'Available'),
+        ('unavailable', 'Unavailable'),
+        ('booked', 'Booked'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Availabilities"
+        ordering = ['start']
+        unique_together = ('psychologist', 'start', 'end')  # Prevent duplicate slots
+
+    def __str__(self):
+        return f"{self.get_status_display()} ({self.start} to {self.end})"
+
+
+class Booking(models.Model):
+    psychologist = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings_as_psychologist')
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings_as_client', null=True, blank=True)
+    client_email = models.EmailField(blank=True, null=True)
+    client_phone = models.CharField(max_length=20, blank=True, null=True)
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    notes = models.TextField(blank=True, null=True)
+    meet_link = models.URLField(blank=True, null=True)
+    calendar_event_id = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['start']
+
+    def __str__(self):
+        return f"Session with {self.client_email or self.client} at {self.start}"
+
+
+
+class PsychologistProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    username = models.CharField(max_length=100)
+    gender = models.CharField(max_length=20, blank=True, null=True)
+    google_auth_token = models.JSONField(blank=True, null=True)
+    bio = models.TextField(max_length=500, blank=True, null=True)
+    specializations = models.CharField(max_length=255, blank=True, null=True)
+    languages = models.JSONField(default=list)  # Storing as list of strings
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    license_number = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.username}'s Profile"
 
 class ContactMessage(models.Model):
     title = models.CharField(max_length=200)
