@@ -34,7 +34,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g_5)1ur5+ah)c0k&oefjgg(uu55o+5y3k$xw4g=fah-mhqbx0='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'safespacekenya.onrender.com',
@@ -87,8 +87,9 @@ REST_FRAMEWORK = {
 
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-     'https://gbv4.onrender.com' 
+    # 'http://localhost:5173',
+     'https://gbv4.onrender.com',
+     'http://safespacekenya.onrender.com'
 ]
 
 # settings.py
