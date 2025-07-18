@@ -27,7 +27,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_ALL_ORIGINS = True  # For development only, tighten for production
 CORS_ALLOW_CREDENTIALS = True
-# ALLOWED_HOSTS = [ 'http://safespacekenya.onrender.com' ]
+ALLOWED_HOSTS = [ 'http://safespacekenya.onrender.com' ]
 
 STORAGES = {
     'default': {
