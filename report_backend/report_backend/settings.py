@@ -89,7 +89,7 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     # 'http://localhost:5173',
      'https://gbv4.onrender.com',
-     'http://safespacekenya.onrender.com'
+     'https://safespacekenya.onrender.com'
 ]
 
 # settings.py
