@@ -81,7 +81,7 @@ REST_FRAMEWORK = {
         'reports.authentication.FirebaseAuthentication',
     ],
         'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ]
 }
 
