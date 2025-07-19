@@ -14,15 +14,45 @@ from firebase_admin import credentials
 from pathlib import Path
 
 # Firebase initialization
+# try:
+#     cred_path = Path(__file__).resolve().parent / 'config' / 'firebase-service-account.json'
+#     if cred_path.exists():
+#         cred = credentials.Certificate(str(cred_path))
+#         firebase_admin.initialize_app(cred)
+#     else:
+#         print(f"Warning: Firebase service account file not found at {cred_path}")
+# except Exception as e:
+#     print(f"Error initializing Firebase: {str(e)}")
+
+# Firebase initialization
 try:
-    cred_path = Path(__file__).resolve().parent / 'config' / 'firebase-service-account.json'
-    if cred_path.exists():
-        cred = credentials.Certificate(str(cred_path))
+    import base64
+    import tempfile
+
+    firebase_base64 = os.getenv("FIREBASE_SERVICE_ACCOUNT_BASE64")
+
+    if firebase_base64:
+        decoded_json = base64.b64decode(firebase_base64.encode("utf-8"))
+
+        # Create a temporary file for the credentials
+        temp_cred_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        temp_cred_file.write(decoded_json)
+        temp_cred_file.flush()
+        temp_cred_file.close()
+
+        cred = credentials.Certificate(temp_cred_file.name)
         firebase_admin.initialize_app(cred)
     else:
-        print(f"Warning: Firebase service account file not found at {cred_path}")
+        # Fallback to local JSON file if base64 is not found
+        cred_path = Path(__file__).resolve().parent / 'config' / 'firebase-service-account.json'
+        if cred_path.exists():
+            cred = credentials.Certificate(str(cred_path))
+            firebase_admin.initialize_app(cred)
+        else:
+            print("Warning: No Firebase credentials found.")
 except Exception as e:
-    print(f"Error initializing Firebase: {str(e)}")
+    print(f"Error initializing Firebase: {e}")
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
