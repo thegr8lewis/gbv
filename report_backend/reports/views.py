@@ -1042,12 +1042,15 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 class PublicEventListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+
     serializer_class = EventSerializer
     queryset = Event.objects.filter(date__gte=timezone.now()).order_by('date')
 
 
 class PublicUpdateListView(generics.ListAPIView):
     permission_classes = [AllowAny]
+    
     serializer_class = UpdateSerializer
     queryset = Update.objects.filter(published=True).order_by('-date')
 
