@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 
 User = get_user_model()
 
+
 class PsychologistAvailability(models.Model):
     psychologist = models.ForeignKey(
         User, 
@@ -209,3 +210,40 @@ class IncidentReport(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+
+
+
+        # reports/models.py
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+User = get_user_model()
+
+# Existing models (PsychologistAvailability, Availability, Booking, etc.) remain unchanged
+
+class UserAuthDetails(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='auth_details')
+    last_login = models.DateTimeField(null=True, blank=True)
+    token_created_at = models.DateTimeField(null=True, blank=True)
+    account_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('active', 'Active'),
+            ('pending', 'Pending'),
+            ('suspended', 'Suspended'),
+        ],
+        default='pending'
+    )
+    failed_login_attempts = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Auth Details for {self.user.email}"
+
+    class Meta:
+        verbose_name = "User Authentication Detail"
+        verbose_name_plural = "User Authentication Details"

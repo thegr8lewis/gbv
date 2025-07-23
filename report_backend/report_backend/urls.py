@@ -35,7 +35,11 @@ from reports.views import (
     AvailabilityDetailView
     , PsychologistListView,
     PsychologistDetailView,
-    CreateBookingView
+    CreateBookingView,
+    RegisterView,
+    LoginView,
+    UserDetailsView
+    
 )
 
 urlpatterns = [
@@ -75,7 +79,6 @@ urlpatterns = [
     path('api/update-credentials/', update_credentials, name='update-credentials'),
 
 
-
     path('api/profile/', ProfileDetailView.as_view(), name='profile-detail'),
     path('api/bookings/', BookingListCreateView.as_view(), name='booking-list'),
     path('api/bookings/past/', PastBookingsView.as_view(), name='past-bookings'),
@@ -88,6 +91,11 @@ urlpatterns = [
 
     path('api/psychologists/<int:user_id>/', PsychologistDetailView.as_view(), name='psychologist-detail'),
     path('api/psychologists/<int:user_id>/bookings/', CreateBookingView.as_view(), name='create-booking'),
+
+    path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/auth/register/', RegisterView.as_view(), name='register'),
+    path('api/auth/user/', UserDetailsView.as_view(), name='user-details'),
+    
 ]
 
 if settings.DEBUG:
