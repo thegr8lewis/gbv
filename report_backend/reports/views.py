@@ -1026,7 +1026,7 @@ def nearest_services(request):
 
 
 class EventListView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     serializer_class = EventSerializer
     
     def get_queryset(self):
@@ -1107,6 +1107,8 @@ class AdminDetailsView(APIView):
 
 
 class SubmitReportView(APIView):
+    permission_classes = [AllowAny] 
+
     def post(self, request, format=None):
         serializer = IncidentReportSerializer(data=request.data)
         if serializer.is_valid():
