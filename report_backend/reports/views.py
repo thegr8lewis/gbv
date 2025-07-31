@@ -151,7 +151,8 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from .models import UserAuthDetails
 from .serializers import UserAuthDetailsSerializer
-
+from django.contrib.auth import get_user_model
+User = get_user_model()
 # Existing imports and views remain unchanged
 
 class LoginView(APIView):
@@ -1050,7 +1051,7 @@ class PublicEventListView(generics.ListAPIView):
 
 class PublicUpdateListView(generics.ListAPIView):
     permission_classes = [AllowAny]
-    
+
     serializer_class = UpdateSerializer
     queryset = Update.objects.filter(published=True).order_by('-date')
 
